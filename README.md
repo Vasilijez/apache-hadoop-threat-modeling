@@ -1,1 +1,1 @@
-# apache-hadoop-threat-modelling
+# apache-hadoop-threat-modeling
