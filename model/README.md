@@ -41,7 +41,7 @@ _Tebela 1. Dijagram tokova podataka sa prikazom resursa._
 
 \* U zavisnosti od procesnog čvora mogu predstavljati i metapodatke, ne i same podatke.
 
-U nastavku je analiziran svaki kritični resurs kroz prizmu mogućih napada bezbednosono svojstvo resursa koje napad narušava. 
+U nastavku je analiziran svaki kritični resurs kroz prizmu mogućih napada i bezbednosono svojstvo resursa koje napad narušava. 
 
 | IDR | Kritični resursi | IDP | Pretnje | Tip
 | -- | ------ | ----- | --- | --- | 
