@@ -1,16 +1,18 @@
 # Modelovanje pretnji nad Apache Hadoop sistemom
 
-Na dijagramu tokova podataka koji će u nastavku biti prikazan, predstavljena je osnovna postavka Apache Hadoop sistema u kojem su prikazane ključne komponente na najvišem nivou apstrakcije prilikom modelovanja.
+Tema modale pretnji jeste Apache Hadoop sistema.
 
-## Dijagrami tokova podataka
+Na dijagramu tokova podataka, slika 1, predstavljena je osnovna postavka Apache Hadoop sistem. Prikazane su ključne komponente na najvišem nivou apstrakcije prilikom modelovanja.
 
 ![Apstraktni dijagram](./Apstraktni_dijagram.png)
 
 _Slika 1. Dijagram tokova podataka na najvišem nivou apstrakcije._
 
+## Dijagrami tokova podataka
+
 ![Dekomponovan dijagram](./Kompletan_dijagram.png)
 
-_Slika 2. Dijagram tokova podataka dekomponovan na višem nivou detaljnosti sa prikazom resursa._
+_Slika 2. Dijagram tokova podataka dekomponovan na višem nivou detaljnosti._
 
 **Napomena:** S obzirom da se resurs R1 propagira kroz čitav sistem, nije predstavljen na dijagramu kako ga ne bi opteretio.
 
@@ -18,25 +20,51 @@ Potrebno je pojasniti svaki element dijagrama i predstavljenog modela ponaosob. 
 
 ## Resursi i pretnje visokog nivoa
 
+Na slici 3 je predstavljen dijagram toka podataka Apache Hadoop sistema dekomponovan na višem nivou detaljnosti sa prikazanim kritičnim resursima. U tabeli ispod slike su navedeni svi kritični resursi.  
+
+![Dekomponovan dijagram](./Dijagram_sa_resursima.png.png)
+
+_Slika 3. Dijagram tokova podataka sa prikazom resursa._
+
+| ID | Kritični resursi |
+| -- | ------ |
+| R1 | Tokeni (TGT, delegacioni, block access, job tokeni i slični) |
+| R2 | Konfiguracioni fajlovi |
+| R3 | Blokovi podataka (*) |
+| R4 | Poslovi i zadaci |
+| R5 | Alocirani računarski resursi: RAM, CPU i stalna memorija (*) |
+| R6 | Rezultati |
+| R7 | Informacije o kontejnerima |
+| R8 | Logovi i informacije o sistemu |
+
+_Tebela 1. Dijagram tokova podataka sa prikazom resursa._
+
+\* U zavisnosti od procesnog čvora mogu predstavljati i metapodatke, ne i same podatke.
+
+U nastavku je analiziran svaki kritični resurs kroz prizmu mogućih napada bezbednosono svojstvo resursa koje napad narušava. 
+
 | IDR | Kritični resursi | IDP | Pretnje | Tip
 | -- | ------ | ----- | --- | --- | 
-| R1 | Tokeni (TGT, delegacioni, block access, job tokeni i slični) | P11 | Krađa tokena ili zloupotreba tokena | S, E, I
+| R1 | Tokeni (TGT, delegacioni, block access, job tokeni i slični) | P11 | Krađa tokena ili zloupotreba tokena | S, E, I 
+|  |  | P12|  SQL injekcija kroz nevalidiran HTTP zahtev | S, T, R, I, D, E 
+|  |  | P13|  Komandne injekcije zahvaljujući ranjivom parsiranju komandi (ranjiv CLI) | S, T, R, I, D, E 
+|  |  | P14|  Neadekvatne autorizacije | S, T, I
+|  |  | P15|  Napad velikim broj zahteva kako bi se izvršilo zagušenje API servisa | D
 | R2 | Konfiguracioni fajlovi | P21 | Manipulacija konfiguracionim fajlovima može promeniti stanje sistema radi uvođenja ranjivosti | T, I, D
 |  |  | P22|  Narušavanje poverljivosti konfiguracionih fajlova | I
 | R3 | Blokovi podataka (*) | P31 | Napadač želi da na maliciozni način upravlja podacima (čita, briše, upisuje) čime potencijalno narušava integritet, poverljivost i dostupnost. | D, T, I
 | | | P32 | Slanje prevelikog broja zahteva radi postizanja nedostupnosti sistema. | D
-| R4 | Dekomponovani zadaci |P41| Slanje prevelikog broja poslova kako bi se izvršilo opterećenje *ApplicationManager* komponente.  | T, D 
+| R4 | Poslovi i zadaci |P41| Slanje prevelikog broja poslova kako bi se izvršilo opterećenje *ApplicationManager* komponente.  | T, D 
 | | | P42 | Podmetanje malicioznih poslova kako bi se ostvarile štetne operacije. | T, D, I, E
 | R5 | Alocirani računarski resursi: RAM, CPU i stalna memorija (*) | P51 | Podmetanje malicioznog posla koji alocira velike količine računarskih resursa.  | D, T
-| R6 | Međurezultati | P61 | Promena međurezultata kako bi se uticalo na tačnost konačnih rezultata | T, E, I
+| R6 | Rezultati | P61 | Promena međurezultata kako bi se uticalo na tačnost konačnih rezultata | T, E, I
 | R7 | Informacije o kontejnerima | P71| Lažiranje informacija o resursima kontejnera zarad ostvarivanja više resursa | T, D
 | | | P72 | Podmetanje malicioznih kontejnera | S, T, D
 | | | P73 | Preopterećenje ili rušenje kontejnera | D
 | | | P74 | Zloupotreba kontejnera radi postizanja većih privilegija | E
 | R8 | Logovi i informacije o sistemu | P81 | Lažiranje logova u cilju sabotaže sistema | T, I, R, S
 
-\* U zavisnosti od procesnog čvora mogu predstavljati i metapodatke, ne i same podatke.
-
+_Tebela 2. Prikaz potencijalnih napada na resurse._
 
 ## Literatura
            
