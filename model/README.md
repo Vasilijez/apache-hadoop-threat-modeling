@@ -22,7 +22,7 @@ Potrebno je pojasniti svaki element dijagrama i predstavljenog modela ponaosob. 
 
 Na slici 3 je predstavljen dijagram toka podataka Apache Hadoop sistema dekomponovan na višem nivou detaljnosti sa prikazanim kritičnim resursima. U tabeli ispod slike su navedeni svi kritični resursi.  
 
-![Dekomponovan dijagram](./Dijagram_sa_resursima.png.png)
+![Dekomponovan dijagram](./Dijagram_sa_resursima.png)
 
 _Slika 3. Dijagram tokova podataka sa prikazom resursa._
 
