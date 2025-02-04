@@ -50,15 +50,11 @@ _Tebela 1. Dijagram toko podataka sa prikazom resursa._
 
 **Napomena:** \(*) U zavisnosti od procesnog čvora mogu predstavljati i metapodatke, ne i same podatke.
 
-U nastavku je analiziran svaki kritični resurs kroz prizmu mogućih napada i bezbednosono svojstvo resursa koje napad narušava. 
+U nastavku je analiziran svaki kritični resurs kroz prizmu mogućih pretnji, zatim su određena bezbednosna svojstva resursa, koje pretnje, ukoliko su realizovane, mogu narušiti. 
 
 | IDR | Kritični resursi | IDP | Pretnje | Tip
 | -- | ------ | ----- | --- | --- | 
 | R1 | Tokeni (TGT, delegacioni, block access, job tokeni i slični) | P11 | Krađa tokena ili zloupotreba tokena | S, E, I 
-|  |  | P12|  SQL injekcija kroz nevalidiran HTTP zahtev | S, T, R, I, D, E 
-|  |  | P13|  Komandne injekcije zahvaljujući ranjivom parsiranju komandi (ranjiv CLI) | S, T, R, I, D, E 
-|  |  | P14|  Neadekvatne autorizacije | S, T, I
-|  |  | P15|  Napad velikim broj zahteva kako bi se izvršilo zagušenje API servisa | D
 | R2 | Konfiguracioni fajlovi | P21 | Manipulacija konfiguracionim fajlovima može promeniti stanje sistema radi uvođenja ranjivosti | T, I, D
 |  |  | P22|  Narušavanje poverljivosti konfiguracionih fajlova | I
 | R3 | Blokovi podataka | P31 | Napadač želi da na maliciozni način upravlja podacima (čita, briše, upisuje) čime potencijalno narušava integritet, poverljivost i dostupnost. | D, T, I
@@ -73,7 +69,7 @@ U nastavku je analiziran svaki kritični resurs kroz prizmu mogućih napada i be
 | | | P74 | Zloupotreba kontejnera radi postizanja većih privilegija | E
 | R8 | Logovi i informacije o sistemu | P81 | Lažiranje logova u cilju sabotaže sistema | T, I, R, S
 
-_Tebela 2. Prikaz potencijalnih napada na resurse._
+_Tebela 2. Prikaz potencijalnih pretnji na resurse._
 
 ## Literatura
            
