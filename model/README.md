@@ -9,12 +9,12 @@ Na dijagramu toka podataka, slika 1, predstavljena je osnovna postavka _Hadoop_ 
 _Slika 1: Dijagram toka podataka na najvišem nivou apstrakcije._
 
 ## Dekompozicija modula
-U zavisnosti od postavke _Hadoop_ klastera moguće je uključivanje različitih komponenti. U zavinosti od tipa komponente moguće je povećati površinu za napad, ali i adekvatnije upravljati bezbednošću. Na primer, uvođenjem _ZooKeeper_ ili _Kerberos_ komponente modul će povećati stepen bezbednosti. Uvođenjem komponente kao što je _Apache Hive_ se povećava površina za napad, jer se uvodi komponenta koja nije jezgro (engl. _core_) _Hadoop_ modula. Pitanjem bezbednosti klastera je moguće baviti se na sledeća tri načina:
-1. Oslanjanjem na _Linux_ bezbednosne mehanizme.  
+U zavisnosti od postavke _Hadoop_ klastera moguće je uključivanje različitih komponenti. U zavisnosti od tipa komponente moguće je povećati površinu za napad, ali i adekvatnije upravljati bezbednošću. Na primer, uvođenjem _ZooKeeper_ ili _Kerberos_ komponente modul će povećati stepen bezbednosti. Uvođenjem komponente kao što je _Apache Hive_ se povećava površina za napad, jer se uvodi komponenta koja nije jezgro (engl. _core_) _Hadoop_ modula. Pitanjem bezbednosti klastera je moguće baviti se na sledeća tri načina:
+1. Oslanjanjem na bezbednosne mehanizme operativnog sistema.  
 2. Oslanjanjem na _Hadoop_ bezbednosne mehanizme.
 3. Oslanjanjem na eksterne komponente koje postižu veći stepen bezbednosti.
 
-_Hadoop_ klaster koji služi kao referentni model za potrebe detaljnije analize podrazumeva napredne bezbednosne mehanizme, kao što je recimo upotreba eksterne komponente _Kerberos_. Ipak, najrealnije sagledavanje nekog modula iz aspekta bezbednosti bi bilo kroz osnovne (podrazumevane) nivoe zaštite, što će se imati na umu tokom ovog istraživačkog rada. 
+_Hadoop_ klaster koji služi kao referentni model za potrebe detaljnije analize podrazumeva napredne bezbednosne mehanizme, kao što je recimo upotreba eksterne komponente _Kerberos_. Ipak, najrealnije sagledavanje nekog modula sa aspekta bezbednosti bi bilo kroz osnovne (podrazumevane) nivoe zaštite, što će se imati na umu tokom ovog istraživačkog rada. 
 
 ![Dekomponovan dijagram](./Kompletan_dijagram.svg)
 
@@ -38,17 +38,17 @@ _Slika 3: Dijagram master-slave hijerarhije odnosa._
 
 Procesni čvorovi _Scheduler_ i _ApplicationManager_, su posledično nadređeni procesnim čvorovima _ApplicationMaster_, _NodeManager_ i _Container_. Takođe, procesni čvor _NameNode_ je nadređen _DataNode_ procesnim čvorovima.
 
-Iz aspekta bezbednosti bitno je razumeti ove odnose kako bi se adekvatno definisale granice poverenja.
+Sa aspekta bezbednosti bitno je razumeti ove odnose kako bi se adekvatno definisale granice poverenja.
 
 #### Tipovi zahteva
 Klijentski zahtevi se načelno dele na dva tipa:
 1. Zahtevi za rad nad podacima — Ova vrsta zahteva odnosi se na čitanje, upis, brisanje ili izmenu podataka.
-2. Zahtevi za pokretanje poslova — Ova grupa obuhvata zahteve za prosleđivanje poslova (engl. _job_ ili _application_), pri čemu je _MapReduce_ najčešći tip. 
+2. Zahtevi za pokretanje poslova — Ova grupa obuhvata zahteve za prosleđivanje poslova (engl. _job_ ili _application_), pri čemu je _MapReduce_ najčešći tip posla. 
 
 ###### Zahtev za čitanje podataka
 Ukoliko bi klijent uputio zahtev za čitanje podataka, tada bi se kontaktirala _HDFS_ komponenta. Konkretnije govoreći, procesni čvor _NameNode_, koji enkapsulira sve zadatke i operacije koje se izvršavaju zarad obavljanja operacije čitanje podataka. _NameNode_ u svakom trenutku zna gde se koji blokovi podataka nalaze na osnovu skladišta podataka _Metadata_. Ovime je omogućeno da adekvatno odgovori na postavljeni zahtev korisnika kroz dobavljanje podataka od odgovarajućih _DataNode-ova_. Sami _DataNode-ovi_ skladište blokove podataka u specijalizovanom distribuiranom sistemu datoteka, što je na dijagramu specificirano kao skladište _Blocks_.
 ###### Zahtev za pokretanje posla
-Kada se šalje zahtev za obradom _MapReduce_ posla situacija je nešto drugačija. Tada je u proces uključen čitav _Hadoop_ modul. _YARN_ komponenta poput _HDFS_ komponente prožima više elemenata. Ipak, fundamentalna komponenta predstavlja _Resource Manager_ koja se deli na _Scheduler_ i _ApplicationManager_ procesne čvorove. _Scheduler_ procesni čvor ima centralnu ulogu u _YARN_ komponenti.  Uloga _Scheduler_ procesnog čvora je nadgledanje resursa praktično svih procesnih čvorova i dodeljivanje resursa kako bi se realizovali poslovi. Procesni čvorovi u okviru _ResourceManager_ komponente  čuvaju u radnoj memoriji podatke o resursima (_Resources_) i poslovima (_Applications_) radi brzine pristupa. Takođe, oni te podatke povremeno čuvaju i u _Blocks_ skladištu podataka, kako bi lakše nastavili svoj posao u slučaju prekida posla ili manje opteretili sebe radi čitanja podataka o statusu aplikacija.  
+Kada se šalje zahtev za obradom _MapReduce_ posla situacija je nešto drugačija. Tada je u proces uključen čitav _Hadoop_ modul. _YARN_ komponenta poput _HDFS_ komponente prožima više elemenata. Ipak, fundamentalna komponenta predstavlja _ResourceManager_ koja se deli na _Scheduler_ i _ApplicationManager_ procesne čvorove. _Scheduler_ procesni čvor ima centralnu ulogu u _YARN_ komponenti.  Uloga _Scheduler_ procesnog čvora je nadgledanje resursa praktično svih procesnih čvorova i dodeljivanje resursa kako bi se realizovali poslovi. Procesni čvorovi u okviru _ResourceManager_ komponente  čuvaju u radnoj memoriji podatke o resursima (_Resources_) i poslovima (_Applications_) radi brzine pristupa. Takođe, oni te podatke povremeno čuvaju i u _Blocks_ skladištu podataka, kako bi lakše nastavili svoj posao u slučaju prekida posla ili manje opteretili sebe radi čitanja podataka o statusu aplikacija.  
 _Applications_ skladište podataka je izuzetno važno jer se u njemu beleže sve neophodne informacije za _MapReduce_ poslove koji su u toku ili bi trebalo uskoro da počnu.  Svaki posao koji pristigne od klijenta se razbija na zadatke. Posao inicijalno biva prosleđen _ApplicationManager_ procesnom čvoru, koji zahteva resurse za pokretanje kontejnera u okviru kog se izvršava _ApplicationMaster_. Zatim _ApplicationMaster_ preuzima inicijativu i odgovornost, pa u dogovoru sa _Scheduler_ komponentom "ispregovara" resurse neophodne za _Map_ zadatke, a kasnije i za _Reduce_ zadatke. Osnovna uloga _ApplicationMaster_ procesnog čvora je planiranje i  upravljanje realizacijom zadataka, dok je sporedna uloga pregovaranje za dodatnim resursima sa _Scheduler_ komponentom. Svaki _Map_ kontejner će proizvesti međurezultate koji će se kasnije agregirati zahvaljujući _Reduce_ kontejnerima i upisati u _Blocks_.
 
 _Config_ skladište predstavlja konfiguracione fajlove koji se definišu na nivou čvora. Na nivou čvora mogu biti definisane konfiguracije za više procesnih čvorova. Na nivou _Hadoop_ modula posvećena im je posebna pažnja. Ako bi se posmatrao neki čvor, on bi morao imati definisane konfiguracione fajlove:
