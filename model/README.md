@@ -24,8 +24,6 @@ U nastavku će biti pojašnjeni elementi dijagrama analiziranog modula.
 
 _Clients_ predstavljaju eksterni entitet i to bi bili korisnici ili aplikacije koje mogu komunicirati pomoću _Hadoop CLI-a, WebHDFS-a_, biblioteka programskih jezika i slično.
 
-Zahvaljujući eksternom entitetu _Kerberos_ se obavlja adekvatna autentifikacija i autorizacija svakog korisnika. Posmatrani _Hadoop_ klaster se bazira na cirkulaciji različitih tipova tokena u zavisnosti od komunikacije pojedinačnih komponenti.
-
 #### Hijerahija odnosa
 Potrebno je objasniti hijerarhiju odnosa između čvorova. Uvode se pojmovi nadređeni (engl. _master_) i podređeni (engl. _slave_) čvor. 
 Čvor može biti _Docker_ kontejner, virtuelna mašina ili server. Obratiti pažnju, procesni čvor nije uvek isto što i čvor, iako najčešće jeste.
@@ -70,15 +68,14 @@ _Slika 4: Dijagram tokova podataka sa prikazom resursa._
 
 | ID | Kritični resursi |
 | -- | ------ |
-| R1 | Tokeni |
-| R2 | Konfiguracioni fajlovi |
-| R3 | Blokovi podataka |
-| R4 | Poslovi i zadaci |
-| R5 | Alocirani računarski resursi `*` |
-| R6 | Rezultati |
-| R7 | Informacije o statusu |
-| R8 | Logovi |
-| R9 | Meta-podaci |
+| R1 | Konfiguracioni fajlovi |
+| R2 | Blokovi podataka |
+| R3 | Poslovi i zadaci |
+| R4 | Alocirani računarski resursi `*` |
+| R5 | Rezultati |
+| R6 | Informacije o statusu |
+| R7 | Logovi |
+| R8 | Meta-podaci |
 
 _Tebela 1: Dijagram tokova podataka sa prikazom kritičnih resursa._
 
@@ -91,68 +88,62 @@ U nastavku je analiziran svaki kritični resurs kroz prizmu mogućih pretnji, za
 
 | IDR | Kritični resursi | IDP | Pretnje | STRIDE tip
 | -- | ------ | ----- | --- | --- | 
-| R1 | Tokeni | P11 | Krađa tokena | S
-| R2 | Konfiguracioni fajlovi | P21 | Zloupotreba loše konfiguracije | S, T, I, D
-| R3 | Blokovi podataka | P31 | Neovlašćeni pristup podacima | I
-| R3 |  | P32 | Neovlašćeno upravljanje podacima | I 
-| R4 | Poslovi i zadaci | P41 | Podmetanje i krađa poslova | T, I, D
-| R5 | Alocirani računarski resursi | P51 | Izazivanje nedostupnosti modula | D
-| R5 |  | P52 | Zloupotreba alociranih resursa | T
-| R6 | Rezultati | P61 | Manipulacija rezultatima | T 
-| R7 | Informacije o statusu | P71 | Lažiranje informacija | T
-| R8 | Logovi | P81 | Maliciozno čitanje i pisanje | I, T, R
-| R8 | | P82 | Izazivanje nedostupnosti generisanjem logova | D
-| R9 | Meta-podaci | P91 | Otmica čvorova | D, I 
+| R1 | Konfiguracioni fajlovi | P11 | Zloupotreba loše konfiguracije | S, T, I, D
+| R2 | Blokovi podataka | P21 | Neovlašćeni pristup podacima | I
+| R2 |  | P22 | Neovlašćeno upravljanje podacima | I 
+| R3 | Poslovi i zadaci | P31 | Podmetanje i krađa poslova | T, I, D
+| R4 | Alocirani računarski resursi | P41 | Izazivanje nedostupnosti modula | D
+| R4 |  | P42 | Zloupotreba alociranih resursa | T
+| R5 | Rezultati | P51 | Manipulacija rezultatima | T 
+| R6 | Informacije o statusu | P61 | Lažiranje informacija | T
+| R7 | Logovi | P71 | Maliciozno čitanje i pisanje | I, T, R
+| R7 | | P72 | Izazivanje nedostupnosti generisanjem logova | D
+| R8 | Meta-podaci | P81 | Otmica čvorova | D, I 
 
 _Tebela 2. Prikaz potencijalnih pretnji visokog nivoa u odnosu na kritične resurse._
 
 ### Analiza pretnji visokog nivoa
 
-`R1`Većina *Hadoop* modula poseduje *Kerberos* komponentu za autentifikaciju i autorizaciju, stoga su tokeni interesantani sa aspekta bezbednosti. Komunikacija između komponenti se zasniva na tokenima. 
-
-- `P11`
-Uzevši u obzir upotrebu tokena, napadači mogu ukrasti tuđe tokene i na taj način obezbediti neovlašćeni pristup.
-
-`R2`
+`R1`
 Konfiguracioni fajlovi *Hadoop* komponenti su vrlo česta meta napadača.
 
-- `P21:`
+- `P11:`
 S obzirom da *Hadoop* poseduje puno komponenti, kao i konfiguracionih fajlova, napadači su svesni te činjenice i gledaju da to iskoriste na maliciozni način. Uvid ili mogućnost izmene konfiguracionih fajlova pružaju velike mogućnosti. Ipak, u praksi se najčešće iskoristi situacija sa podrazumevanim i loše definisanim konfiguracinom fajlovima. 
 
-`R3`
+`R2`
 Blokovi podataka su omiljeni kritični resurs za napadače. 
 
-- `P31`
+- `P21`
 Napadači mogu na različite načine zloupotrebiti podatke za koje nemaju prava. Na primer, mogu ukrasti poverljive podatke drugih korisnika i zlouputrebiti ih radi ucene. Takođe ih mogu prodati na crnom tržištu.
 
-- `P32` 
+- `P22` 
 Napadači vrlo često žele da naruše integritet i dostupnost podataka. Na primer, ukoliko bi napadač neovlašćeno čitao podatke, možda mu to ne bi bilo dovoljno za adekvatnu ucenu žrtve. Već bi šifrovanje ili kopiranje pa brisanje takvih podataka bilo efektivnije. Ukoliko bi napadač bio angažovan od strane malicioznog partnera, upravljanjem poverljivim podacima bi uspeo da izmeni ugovore od značaja.  
 
 
-`R4`
+`R3`
 Poslovi i zadaci izazivaju alociranje resursa potrebnih za obradu podataka. Iz blokova podataka se prvenstveno vrši čitanje, a zatim i pisanje. Poslovi su interesantna meta, jer njihovo kreiranje inicira alociranje resursa. 
 
-- `P41` Napadači najčešće kradu ili podmeću poslove. Krađom poslova se neovlašćeno čitaju podaci ili koriste tuđi resursi. Podmetanjem poslova se zloupotrebljavaju resursi klastera. Pristup osetljivim podacima pruža različite mogućnosti zloupotrebe protiv vlasnika podataka. Alocirani resursi bivaju iskorišteni za maliciozne radnje. Podmetanjem poslova se može usporiti rad klastera što za posledicu ima nedostupnost modula.
+- `P31` Napadači najčešće kradu ili podmeću poslove. Krađom poslova se neovlašćeno čitaju podaci ili koriste tuđi resursi. Podmetanjem poslova se zloupotrebljavaju resursi klastera. Pristup osetljivim podacima pruža različite mogućnosti zloupotrebe protiv vlasnika podataka. Alocirani resursi bivaju iskorišteni za maliciozne radnje. Podmetanjem poslova se može usporiti rad klastera što za posledicu ima nedostupnost modula.
 
-**`R5`**
+**`R4`**
 Alocirani računarski resursi: RAM, CPU i stalna memorija.
 
-- `P51` Ciljano zauzimanje što veće količine resursa kako bi se izazvala nedostupnost modula čime se negativno utiče na reputaciju poslovnog entiteta.
+- `P41` Ciljano zauzimanje što veće količine resursa kako bi se izazvala nedostupnost modula čime se negativno utiče na reputaciju poslovnog entiteta.
 
-- `P52` Upotreba alociranih resursa za ispunjenje malicioznih aktivnosti. Napadači žele da alocirane resurse koriste za svoje maliciozne radnje, umesto za osnovnu namenu.
+- `P42` Upotreba alociranih resursa za ispunjenje malicioznih aktivnosti. Napadači žele da alocirane resurse koriste za svoje maliciozne radnje, umesto za osnovnu namenu.
 
-**`R6`**
+**`R5`**
 Rezultati izračunavanja su interesantni sa aspekta bezbednosti, jer se *Hadoop* moduli koriste i za obradu podataka. Neretko, rezultat obrade podataka predstavlja znanje koje služi za donošenje poslovnih odluka.
 
-- `P61` 
+- `P51` 
 Napadač može na perfidan način manipulisati rezultatima, što za posledicu ima loše upravljanje poslovnim entitetom. Integritet podataka je narušen realizacijom ovakve pretnje. 
 
 
-**`R7`** Informacije o statusu
+**`R6`** Informacije o statusu
 
-- `P71` Lažiranje informacija kako bi se modul doveo u nedostupno stanje ili uticalo negativno na njegove performanse zarad realizacije procesa napadača.
+- `P61` Lažiranje informacija kako bi se modul doveo u nedostupno stanje ili uticalo negativno na njegove performanse zarad realizacije procesa napadača.
 
-`R8` Logovi poseduje značajne informacije o radu modula i neretko obiluju osetljivim podacima. Ova vrsta resursa je korisna napadaču iz više razloga:
+`R7` Logovi poseduje značajne informacije o radu modula i neretko obiluju osetljivim podacima. Ova vrsta resursa je korisna napadaču iz više razloga:
 * Podmetanje i izmena podataka.
 * Krađa logova.
 * Neovlašćeno čitanje logova.
@@ -160,16 +151,16 @@ Napadač može na perfidan način manipulisati rezultatima, što za posledicu im
 * Otkrivanje propusta i osetljivih podataka.
 
 Prepoznate pretnje visokog nivoa su:
-- `P81`  Napadač nakon što je izvršio maliciozne radnje može poželeti da prikrije svoje tragove. Sem prikrivanja može biti korisno i menjanje podataka kako bi se izvršilo podmetanje i kako bi se neko drugi okrivio. Ukoliko napadač planira da realizuje neke kompleksnije pretnje vrlo verovatno će se zainteresovati za analizu logova. Logovi će mu obezbediti dublje razumevanje modula, kao i potencijalne bezbednosne propuste. 
+- `P71`  Napadač nakon što je izvršio maliciozne radnje može poželeti da prikrije svoje tragove. Sem prikrivanja može biti korisno i menjanje podataka kako bi se izvršilo podmetanje i kako bi se neko drugi okrivio. Ukoliko napadač planira da realizuje neke kompleksnije pretnje vrlo verovatno će se zainteresovati za analizu logova. Logovi će mu obezbediti dublje razumevanje modula, kao i potencijalne bezbednosne propuste. 
 
-- `P82` Postoje slučajevi i kada napadač poznavajući mehanizme generisanja logova može inicirati kreiranje velike količine logova. Posledica ove pretnje je nedostupnost modula.
+- `P72` Postoje slučajevi i kada napadač poznavajući mehanizme generisanja logova može inicirati kreiranje velike količine logova. Posledica ove pretnje je nedostupnost modula.
 
-`R9` Meta-podaci su neophodni podaci za adekvatno upravljanje podređenim čvorovima.
+`R8` Meta-podaci su neophodni podaci za adekvatno upravljanje podređenim čvorovima.
 
-- `P91` Ako napadač ostvari pristup ovoj vrsti podataka, vrlo jednostavno može izvršiti otmicu čvorova.  Preuzimanjem kontrole nad čvorovima, moguće ih je iskoristiti za realizaciju malicioznih procesa.
+- `P81` Ako napadač ostvari pristup ovoj vrsti podataka, vrlo jednostavno može izvršiti otmicu čvorova.  Preuzimanjem kontrole nad čvorovima, moguće ih je iskoristiti za realizaciju malicioznih procesa.
 
 U nastavku slede razrađena stabla napada, analize odabranih napada kao i predložene mitigacije za dve pretnje visokog nivoa:
-1. [Direktorijum pretnje `P41`...](https://github.com/Vasilijez/apache-hadoop-threat-modeling/tree/main/model)
+1. [Direktorijum pretnje `P31`...](https://github.com/Vasilijez/apache-hadoop-threat-modeling/tree/main/model)
 2. [Direktorijum...](https://github.com/Vasilijez/apache-hadoop-threat-modeling/tree/main/model)
 
 ## Reference
