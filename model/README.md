@@ -1,6 +1,6 @@
 # Modelovanje pretnji nad _Apache Hadoop_ modulom
 
-Kada je reč o velikim skupovima podataka upotreba ovog modula je nezaobilazna [2]. Njegova snaga leži u osobini distribuiranog skladištenja i obrade podataka. _Hadoop_ klasteri su po svojoj prirodi vrlo kompleksni, jer ih čine mnoštvo komponenti koje sinhrono funkcionišu kao jedna celina. Komponente vrlo često komuniciraju i razmenjuju podatke kako bi adekvatno odgovorile na zahteve korisnika. Pošto je reč o ovako složenom modulu, on je vrlo interesantan sa aspekta bezbednosti, kako od strane malicioznih korisnika, tako i od strane osoblja zaduženog za očuvanje njegove bezbednosti. 
+Kada je reč o velikim skupovima podataka upotreba ovog modula je nezaobilazna [[2]](#[2]). Njegova snaga leži u osobini distribuiranog skladištenja i obrade podataka. _Hadoop_ klasteri su po svojoj prirodi vrlo kompleksni, jer ih čine mnoštvo komponenti koje sinhrono funkcionišu kao jedna celina. Komponente vrlo često komuniciraju i razmenjuju podatke kako bi adekvatno odgovorile na zahteve korisnika. Pošto je reč o ovako složenom modulu, on je vrlo interesantan sa aspekta bezbednosti, kako od strane malicioznih korisnika, tako i od strane osoblja zaduženog za očuvanje njegove bezbednosti. 
 
 Na dijagramu toka podataka, slika 1, predstavljena je osnovna postavka _Hadoop_ modula. Prikazane su ključne komponente na najvišem nivou apstrakcije prilikom modelovanja.
 
@@ -29,8 +29,8 @@ Zahvaljujući eksternom entitetu _Kerberos_ se obavlja adekvatna autentifikacija
 #### Hijerahija odnosa
 Potrebno je objasniti hijerarhiju odnosa između čvorova. Uvode se pojmovi nadređeni (engl. _master_) i podređeni (engl. _slave_) čvor. 
 Čvor može biti _Docker_ kontejner, virtuelna mašina ili server. Obratiti pažnju, procesni čvor nije uvek isto što i čvor, iako najčešće jeste.
-- U okviru _YARN_ komponente, _ResourceManager_ je nadređeni čvor, pri čemu su _NodeManager_ podređeni čvorovi [3].
-- U okviru _HDFS_ komponente, _NameNode_ je nadređeni čvor, pri čemu su _DataNode_ podređeni čvorovi [4].
+- U okviru _YARN_ komponente, _ResourceManager_ je nadređeni čvor, pri čemu su _NodeManager-s_ podređeni čvorovi [[3]](#[3]).
+- U okviru _HDFS_ komponente, _NameNode_ je nadređeni čvor, pri čemu su _DataNode-s_ podređeni čvorovi [[4]](#[4]).
 
 ![Master-slave hijerarhija](./Master_slave_hijerarhija.svg)
 
@@ -174,7 +174,14 @@ U nastavku slede razrađena stabla napada, analize odabranih napada kao i predlo
 
 ## Reference
 
-1. [Korišćena terminologija u ovom dokumentu.](https://github.com/Luburic/zoss-model-pretnji/blob/main/modeli/terminologija.md) Pristupano 13.12.2024.
-2. [Introduction to Hadoop.](https://www.geeksforgeeks.org/hadoop-an-introduction) Pristupano 1.6.2025.
-3. [Apache Hadoop 3.4.1 - Apache Hadoop YARN.](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html) Pristupano 4.6.2025.
-4. [Apache Hadoop 3.4.1 - HDFS Architecture](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html) Pristupano 4.6.2025.
+<a id="[1]"></a>
+[1] [Korišćena terminologija u ovom istraživačkom radu](https://github.com/Luburic/zoss-model-pretnji/blob/main/modeli/terminologija.md) _(Autor: Nikola Luburić, Pristupano: _13. decembra, 2024_)_
+
+<a id="[2]"></a>
+[2] [Introduction to Hadoop](https://www.geeksforgeeks.org/hadoop-an-introduction) _(Autor: Geeks for Geeks, Pristupano: _1. juna, 2025_)_
+
+<a id="[3]"></a>
+[3] [Apache Hadoop 3.4.1 - Apache Hadoop YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html) _(Autor: Apache Software Foundation, Pristupano: _4. juna, 2025_)_
+
+<a id="[4]"></a>
+[4] [Apache Hadoop 3.4.1 - HDFS Architecture](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html) _(Autor: Apache Software Foundation, Pristupano: _4. juna, 2025_)_
