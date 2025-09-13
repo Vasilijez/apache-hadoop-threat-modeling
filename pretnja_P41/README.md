@@ -343,6 +343,43 @@ Potrebno je isključiti propagaciju privilegija koje ima _yarn_ korisnik na nivo
 </property>
 ```
 
+<a id="M4111c"></a>
+### M4111c - Detekcija malicioznih tipova aplikacija
+ 
+Moguće je dublje istražiti vrste komandi koje se koriste od strane napadača, pa ih naknadno dodati čime bi se ostvario veći nivo zaštite. Trenutno su dodate najpoznatije koje se očekuju. Ova bezbednosna kontrola se dodaje kao vid dobre prakse kako bi se ojačala postojeća zaštita. Razlog leži u činjenici postojanja minimalne šansa za pokretanjem neke kreativne maliciozne komande, koja bi uspela da zaobiđe ili onemogući postojeće bezbednosne kontrole. Na primer, maliciozno kontaktiranje internih servisa. Primenom ove bezbednosne kontrole je vrlo otežana penetracija malicioznih komandi, a čak i ukoliko prođu, izuzetno su male šanse da ih druga bezbenosna kontrola neće detektovati. Moguće je primeniti i obrnutu logiku, pa samo kreirati _whitelist_ dozvoljenih komandi što bi bilo efikasnije. Značajno je dobro poznavanje slučajeva korišćenja i komandi koje se pokreću regularno od strane korisnika, kako korisnici ne bi bili nepravedno limitirani pri pokretanju aplikacija.
+
+Potrebno je presretati komande prosleđene putem javno dostupnih _YARN REST API_ servisa ili direktno korišćenjem terminal sesije. Aktiviranjem mitigacije _[M4111b](#M4111b)_ se pruža mogućnost za jednostavno i centralizovano presretanje komandi koje predstavljaju zahtev za pokretanje kontejnera. 
+
+Unutar svakog _NodeManager_ čvora potrebno je izmeniti `container-executor.cfg` fajl, tako što bi se dodala sledeća linija. Reč je o putanji do `interceptor` skripte. 
+``` sh
+launch-script=/opt/hadoop-hooks/launch-interceptor.sh
+```
+
+Takođe je u `yarn-site.xml` fajlu potrebno dodati grupu koja sme da pokreće kontejnere [[22]](#[22]). Ukoliko se ovo ne učini, u pitanju je bezbednosni propust kod koga je moguće pokretanje kontejnera od strane korisnika koji ne pripadaju toj grupi.
+``` xml
+<property>
+  <name>yarn.nodemanager.linux-container-executor.group</name>
+  <value>yarn</value>
+</property>
+```
+Svaka komanda zahtevnog posla je presretnuta i proveren je tip komande. Ukoliko je reč o potencijalno malicioznoj komandi, biće odbačena čime kontejner neće biti pokrenut.
+``` sh
+BLACKLIST=(bash sh curl wget nc "while true" mkfs)
+
+for ban in "${BLACKLIST[@]}"; do
+  if [[ "$*" == *"$ban"* ]]; then
+    echo "DENIED: '$ban' found in command: $*" >&2
+    exit 1
+  fi
+done
+
+exec "$@"
+```
+- `$*` predstavlja čitavu komandu kao jedan string.
+- `$@` predstavlja zahtevane komande i argumente u izvornom obliku.
+
+__Napomena:__ Pri izgradnji složenije skripte savet je koristiti regularne izraze. 
+
 # Reference
 
 <a id="[1]"></a>
@@ -407,4 +444,7 @@ Potrebno je isključiti propagaciju privilegija koje ima _yarn_ korisnik na nivo
 
 <a id="[21]"></a>
 [21] [What does CAP_NET_RAW do?](https://unix.stackexchange.com/questions/447886/what-does-cap-net-raw-do) _(Autor: Vlastimil Burián, Pristupano: _10. avgusta, 2025_)_
+
+<a id="[22]"></a>
+[22] [LinuxContainerExecutor Security Best Practices](https://community.cloudera.com/t5/Community-Articles/LinuxContainerExecutor-Security-Best-Practices/ta-p/244576) _(Autor: amiller, Pristupano: _10. avgusta, 2025_)_
 
