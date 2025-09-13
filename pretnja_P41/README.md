@@ -702,6 +702,51 @@ yarn jar job.jar App                               \
 ```
 _Ovo je ujedno bio i prikaz pokretanja posla napisanog u _Java_ programskom jeziku._
 
+<a id="M4122a"></a>
+### M4122a - Ograničavanje radne memorije
+Potrebno je ograničiti količinu radne memorije po poslu.
+``` xml
+<property>
+  <name>yarn.scheduler.maximum-allocation-mb</name>
+  <value>2048</value>
+</property>
+```
+
+<a id="M4122b"></a>
+### M4122b - Ograničavanje procesorskih jezgara
+Potrebno je ograničiti broj jezgara centralnog procesora po poslu.
+``` xml
+<property>
+  <name>yarn.scheduler.maximum-allocation-vcores</name>
+  <value>2</value> 
+</property>
+```
+Kod ovog napada dolaze u obzir mitigacije koje su i ranije uvedene, poput _[M4121a](#M4121a)_ i _[M4121b](#M4121b)_. Zahtevi koji krše globalno postavljene kvote će biti odbijeni. Moguće je postaviti i personalizovane kvote prema korisniku, što može biti korisno. 
+
+<a id="M4122c"></a>
+### M4122c - Ograničavanje resurskog udela
+Zabrana jednom korisniku da uzme ceo kapacitet klasterskih resursa je možda i najbitnija mitigacija za prevenciju ugrožavanja bezbednosnog svojstva dostupnosti servisa.
+``` xml
+<property>
+  <name>yarn.scheduler.capacity.root.default.maximum-capacity</name>
+  <value>30</value> 
+</property>
+```
+
+<a id="M4122d"></a>
+### M4122d - Definisanje fer raspodele resursa
+Cilj je eliminisati pohlepne poslove i težiti normalnoj raspodeli resursa među korisnicima.
+``` xml
+<property>
+  <name>yarn.resourcemanager.scheduler.monitor.enable</name>
+  <value>true</value>
+</property>
+
+<property>
+  <name>yarn.scheduler.monitor.policies</name>
+  <value>org.apache.hadoop.yarn.server.resourcemanager.monitor.capacity.ProportionalCapacityPreemptionPolicy</value>
+</property>
+```
 ## Kreiranje velike količine nisko zahtevnih poslova
 Ovo predstavlja razradu prethodnog slučaja, pri čemu je ideja da se kreira beskonačno velika količina poslova sa više ili manje resursa. Često je moguće zaobići resursne kvote kroz veće količine nisko zahtevnih poslova.
 #### i.
@@ -735,6 +780,21 @@ for i in $(seq 1 10000); do
         http://edge-node:8088/ws/v1/cluster/apps/new-application
 done
 ```
+Zahvaljujući uvedenoj _Kerberos_ komponenti, ovakav napad ne može zaobići prethodno definisane bezbednosne kontrole.
+
+Do sada uvedene bezbednosne kontrole u velikoj meri onemogućavaju konkretizacije _DOS_ napada. Moguće je definisati različite bezbednosne kontrole prema redovima i udelima korisnika u zauzeću resursa. 
+
+<a id="M4122e"></a>
+### M4122e - Ograničavanje broja simultanih poslova
+Sledeća bezbednosna kontrola uvodi zaštitu u velikoj većini slučajeva. Reč je o definisanju bezbednosne kontrole reda u vidu maksimalnog broja paralelno pokrenutih poslova. 
+``` xml
+<property>
+  <name>yarn.scheduler.capacity.root.naziv_reda.max-running-applications</name>
+  <value>10</value> 
+</property>
+```
+Nameće se ideja o personalizovanom ograničenju broja poslova po korisniku, bez obzira da li pripada ili ne pripada redu. Ovakva bezbednosna kontrola bi poslužila za personalizovano sankcionisanje zlonamernih ili pohlepnih korisnika, stoga će biti uvedena u nastavku istraživačkog rada.
+
 ## Izvršavanje napada od strane malicizone aplikacije
 
 Sledeći primer ilustruje napad direktno iz aplikacije koja koristi _Hadoop_ klaster [[16]](#[16]). Dakle, nije u pitanju terminal sesija, ili javno dostupan _REST API_ servis. Radi se o napadu sa većom tehničkom složenošću. Suština je u pokretanju ogromnog broja kontejnera, uz direktnije obraćanje _ApplicationMaster_ komponenti. Ovde se ističe onaj deo granice poverenja koji se tiče zavisnosti ka drugim aplikacijama, a ne ljudima.
@@ -760,6 +820,8 @@ public class JobConfigurationByClientApp {
   }
 }
 ```
+Do sada uvedene bezbednosne kontrole odgovaraju i za ovu varijaciju klase napada, s tim da se treba obratiti pažnja na to pod kojim korisnikom se izvršava aplikacija. Ukoliko je neki generički korisnik, kao što je to obično _yarn_, onda aplikacija ima izuzetna ovlašćenja. Ne sme se previše verovati aplikaciji koja koristi _Hadoop_ klaster, jer je u pitanju eksterni entitet. Uvesti specifičnog korisnika, kao i svakog drugog korisnika koji nije aplikacija, uz prethodno definisane kvote.
+
 ## Neograničeno upisivanje podataka u lokalnom fajl sistemu
 
 Interesantna varijacija posmatrane klase napada. Napadač može pokušati sa preteranim upisom ogromnih količina podataka (direktno ili posredno). Na taj način vrlo lako može istrošiti sve memorijske kapacitete klastera. Komadnom `dd` ce pokusati upis 1TB podataka. Na ulazu je _zero_ bajt fajl, `if=/dev/zero`. Zatim će biti specificirana putanja izlaznog fajla u lokalnom fajl sistemu, `of={file_name}`. Veličina bloka je 1 GB, `bs=1G`. Ukupno će biti upisano 1000 blokova, `count=1000`. Dat je primer definisanja _payload-a_ kao _mapper-a_, čime se na svim alociranim _mapper_ kontejnerima postiže izvršavanje.
@@ -771,6 +833,16 @@ def mapper(num_files=100):
     os.system(command)
 ```
 
+<a id="M4122f"></a>
+### M4122f - Ograničavanje trajne memorije lokalno
+Najbolje rešenje jeste definisanje bezbednosne kontrole pomoću koje se korisniku definiše kvota maksimalnog korišćenja podataka. Definicija važi na nivou čitavog _NodeManager_ čvora, što je korisno, jer će svi korisnikovi kontejneri biti limitirani u pogledu prostorne složenosti. Stoga je potrebno nad svim _NodeManager_ čvorovima definisati ograničenje zauzeća memorijskog prostora u odnosu na konkretnog korisnika. Ovde se podrazumeva da su kontejneri konkretnog korisnika _mount-ovani_ nad direktorijumom `/users/user`. 
+``` sh
+setquota -u user 524288 524288 0 0 /users/user
+```
+__Napomene:__ 
+- Analiza se uzima pod pretpostavkom uvođenja prethodne mitigacije [M4111d](M4111d). U suprotnom bi svaki kontejner bio podignut pod _root_ ili _yarn_ korisnikom.
+- Iako je ovde u prvi plan istaknut _NodeManager_ čvor, potrebno je na svim čvorovima postaviti kvotu zauzeća memorijskog prostora, bez obzira da li korisnik može ili ne može direktno pristupiti fajl sistemu. Jednostavan primer za direktan pristup fajl sistemu je situacija u kojoj je korisnik prijavljen na _Gateway_ čvor.
+
 ## Neograničeno upisivanje podataka u fajl sistemu _Hadoop_ modula
 
 Izvršiće se upis podataka u _DataNode_ čvorovima, kao i metapodataka u _NameNode_ čvoru. Skladištenje podataka se vrši unutar _HDFS_ komponente, a ne u lokalnom fajl sistemu. Ovaj napad je primarno fokusiran na opterećenje _NameNode_ čvora, iako je moguće primeniti i obrnuti pristup. Napadom na _NameNode_ čvor se lako postiže nedostupnost čitavog klastera, pošto je u pitanju _Single point of failure_ čvor. Komandom `hdfs dfs -touchz` će se napraviti prazan fajl na _HDFS_ komponenti. Iako je svaki fajl prazan, on ipak ima metapodatke i opterećuje _NameNode_. Dat je primer definisanja _payload-a_ kao _mapper-a_, čime se na svim alociranim _mapper_ kontejnerima postiže izvršavanje.
@@ -781,6 +853,21 @@ def mapper(num_files=100000):
     command = f"hdfs dfs -touchz {file_name}"
     os.system(command)
 ```
+
+<a id="M4122g"></a>
+### M4122g - Ograničavanje broja fajlova korisnika
+Potrebno je ograničiti broj fajlova koje je određeni korisnik u stanju da upiše na distribuiranom fajl sistemu.
+``` sh
+hdfs dfsadmin -setQuota 1000 /users/user
+```
+
+<a id="M4122h"></a>
+### M4122h - Ograničavanje trajne memorije globalno
+Moguća je i varijacija napada sa malom količinom fajlova velike veličine. Stoga je potrebno ograničiti količinu memorije dozvoljene korisniku na korišćenje.
+``` sh
+hdfs dfsadmin -setSpaceQuota 50g /users/user
+```
+
 ## Odbacivanje _NodeManager_ čvora
 
 Sledeći posao simulira neuspešno izvršavanje i izlaz sa _error_ kodom. Ovakav posao uzrokuje pokušaje ponovnog izvršavanja, radi oporavka. Mnoštvo ovakvih poslova će izazvati zagušenje klastera po pitanju resursa. Ukoliko se u kraćem vremenskom periodu desi otkazivanje većine poslova na nekom čvoru, to dovodi do odbacivanja čvora od strane _YARN_ komponente. Reč je o vrlo trivijalnom napadu koji je vrlo efektan.
@@ -792,6 +879,47 @@ public class Mapper {
   }
 }
 ```
+Broj ponovnih pokušaja izvršavanja aplikacije treba postaviti na nisku vrednost, što je ranije i učinjeno. Dodatno, ograničiti korisniku broj aktivnih aplikacija u određenom trenutku i postaviti ravnopravan odnos članova reda. Dobra praksa je i definisanje limita nad korisnikom.
+
+<a id="M4122i"></a>
+### M4122i - Smeštanje korisnika u red
+Potrebno je definisati bezbednosnu kontrolu za red kom pripada maliciozni korisnik sa sledećim parametrima: 
+- `capacity` - ograničiti kapacitet reda tj. maksimalnu vrednost zauzeća resursa klastera u procentima.
+- `maximum-applications` - broj maksimalnih poslova koji se izvršavaju simultano.
+- `user-limit-factor` - faktor kojim se ograničava da korisnik može maksimalno iskoristiti ukupan kapacitet reda (npr. 1 x 10% resursa klastera).
+- `yarn.scheduler.capacity.root.queue.acl_submit_applications` - dodavanje korisnika u access control listu na nivou reda.
+``` xml
+<queue name="queue_name">
+  <capacity>10</capacity>
+  <maximum-applications>5</maximum-applications>
+  <user-limit-factor>1</user-limit-factor>
+</queue>
+
+<property>
+  <name>yarn.scheduler.capacity.root.queue.acl_submit_applications</name>
+  <value>alice</value>
+</property>
+```
+Da bi se klaster apsolutno obezbedio potrebno je postaviti maksimalan broj izvršenih poslova za konkretnog korisnika na dnevnom nivou. Teže je sprovesti ovakvu bezbednosnu kontrolu jer _Hadoop_ modul ne podržava potrebne mehanizme.
+
+<a id="M4122j"></a>
+### M4122j - Ograničavanje dnevnog broja poslova korisnika
+Sledeća `.sh` skripta predstavlja _wrapper_ koji će se okidati pri podnošenju zahteva za izvršavanjem posla korisnika. Ukoliko je korisnik prešao određeni dnevni limit, biće odbijen. 
+``` sh
+USER=$(whoami)  
+
+JOB_COUNT=$(curl -s "http://job-history:8188/ws/v1/cluster/apps?user=$USER&startedTimeBegin=$(date -d '00:00' +%s)000" | jq '.apps.app | length')
+
+MAX_DAILY_JOBS=20
+
+if [[ $JOB_COUNT -ge $MAX_DAILY_JOBS ]]; then
+  echo "Job submission rejected: user $USER exceeded daily job submission limit ($MAX_DAILY_JOBS)"
+  exit 1
+fi
+
+yarn jar "$@"
+```
+
 # Reference
 
 <a id="[1]"></a>
