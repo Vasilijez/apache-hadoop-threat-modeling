@@ -380,6 +380,171 @@ exec "$@"
 
 __Napomena:__ Pri izgradnji složenije skripte savet je koristiti regularne izraze. 
 
+<a id='M4111d'></a>
+### M4111d - Uvođenje _Kerberos_ komponente
+_Kerberos_ komponenta će biti detaljnije obrađena u odnosu na ostale mitigacije, jer je njena bezbednosna vrednost u kontekstu smanjenja površine za napad nemerljiva, što važi za bilo koji _Hadoop_ klaster. 
+
+Postoje četiri osnovne komponete: 
+1. _Kerberos_ klijent
+2. _AS (authentication server)_
+3. _TGS (ticket granting server)_
+4. _KDC (key distribution center)_
+
+_Kerberos_ se zasniva na izdavanju vremenski ograničenih tiketa (tokena) kojima se obavlja autentifikacija unutar _Hadoop_ klastera.  Pretpostavka je da su ranije kreirani servisni korisnici, kao i korisnici koji predstavljaju klijente. Neki od primera servisnih korisnika bi bili _hdfs_, _yarn_ ili _mapred_, dok bi primeri klijentskih korisnika bili _alice_, _bob_ ili _john_. Servisni korisnici se koriste za izvršavanje _Hadoop_ servisa kojima se opslužuju klijentski korisnici. _Kerberos_ klijent predstavlja one čvorove na kojima je instalirana podrška za _Kerberos_. _Kerberos_ će biti korišćen od obe vrste korisnika. Klijentski korisnici mogu koristiti _Kerberos_ dodatno i putem javno dostupnih servisa. Dalje, _AS_ će služiti za inicijalnu autentifikaciju i izdavanje _TGT-a (ticket granting ticket)_. _TGS_ će služiti za procesiranje _TGT-a_ i izdavanje _ST-a (service ticket)_. _KDC_ objedinjuje prethodne dve komponente i nadležan je za njihovo upravljanje. Poseduje i bazu podataka gde se čuvaju hešovane vrednosti lozinka korisnika (principala). _Kerberos_ se zasniva na autentifikaciji bez razmene lozinka, čije će značenje biti jasnije u nastavku.
+
+Principal se zadaje u formatu `servis|klijent/hostname@realm` i predstavlja jedinstveni identifikator servisa ili klijenta u _Kerberos_ komponenti [[23]](#[23]):
+- `realm` predstavlja administrativni domen _Kerberos_ komponente. To je način za logičko grupisanje svih korisnika i servisa koji koriste _Kerberos_.
+- `hostname` predstavlja naziv čvora koji koristi _Kerberos_.
+
+Tok obrade zahteva za izvršavanje željene operacije bi okvirno bio sledeći. Klijent će zatražiti da se prijavi na _Kerberos_ upotrebom ličnog principala i lozinke. _KDC_ će proveriti kredencijale i ako je sve u redu vratiće _TGT_, čime je klijent uspešno prijavljen. Kada klijent želi da pristupi nekom servisu, potrebno je poslati _TGT_ sa principalom servisa. Zatim će _TGS_ proveriti i isporučiti _ST_ klijentu koji će klijent koristiti za autentifikaciju. Na kraju će se klijent obratiti servisu koristeći _ST_, pri čemu će ga servis autentifikovati, i odgovor na zahtev će biti predstavljen kao uspešan. Kada klijent šalje _HTTP_ zahtev, tada se koristi _SPNEGO (Simple and Protected GSS-API Negotiation Mechanism)_ _wrapper_ koji automatizuje prethodno opisanu procedru, i sve se predstavi kao jedan odgovor.
+U nastavku će tok obrade zahteva biti pojašnjen na višem nivou detaljnosti. 
+
+
+
+![Dijagram sekvence obrade zahteva za izvršavanje željene operacije](Kerberos_dijagram_sekvence.svg)
+
+_Slika 7: Dijagram sekvence obrade zahteva za izvršavanje željene operacije_
+
+
+
+#### Faza 1 
+Kada klijent pošalje prvu poruku radi autentifikacije prema _KDC_ komponenti, za kriptovanje poruke je tada korišćena heš vrednost klijenta _(zaglavlje 1.1)_. Bilo koja druga komunikacija će koristiti ključeve sesije (_engl. session keys_), generisane od strane _KDC_ komponente. Oni su nasumično generisani i traju određeno vreme. Heš vrednosti su trajno sačuvane u `keytab` fajlu, dok su vrednosti ključeva privremeno sačuvane u keš fajlu `krb5cc`. 
+
+#### Faza 2
+_KDC_ će nakon dekriptovanja inicijalne poruke izgenerisati ključ sesije klijenta i isporučiti ga klijentu. Povratna poruka se sastoji iz dva dela. Prvi deo je kriptovan klijentskom heš vrednošću _(2.1)_, drugi deo je kriptovan heš vrednošću _KDC_ komponente _(2.2 TGT)_. U prvom delu se nalazi ključ sesije klijenta za kasniju komunikaciju. Drugi deo je _TGT_ i on je nečitljiv od strane korisnika, ali se koristi kao poluga za naknadno korišćenje servisa od strane korisnika. _TGT_ se čuva u kešu privremeno. 
+
+#### Faza 3
+_TGT_ i ključ sesije klijenta će se koristiti za dekriptovanje budućih poruka od _KDC_ komponente. Klijent će poslati _TGT_, principal klijenta, principal servisa i ključ sesije klijenta ka _TGS_ komponenti _(2.2 TGT i 3.1)_. _TGT_ biva dekriptovan od strane _KDC_ komponente korišćenjem heš vrednosti _KDC_ komponente čime se dolazi do principala klijenta. Na ovaj način je _KDC_ komponenta u stanju da otključa prvi deo poruke, jer je na osnovu na osnovu principala klijenta poznata heš vrednost klijenta. _KDC_ ne zna koji je jedinstveni ključ sesije klijenta izgenerisao u prethodnoj fazi, jer se čuvanje obavlja privremeno.
+
+#### Faza 4
+Sada će _TGS_ kreirati _ST_. Postojaće dva dela poruke. Prvi deo je kriptovan korišćenjem ključa sesije i klijent ga može dekriptovati _(4.1)_. Drugi deo _(4.2 ST)_ je kriptovan heš vrednošću servisa i nečitljiv je za klijenta. U oba dela poruke se nalazi spakovan i ključ sesije servisa. Pošto je prvi deo poruke čitljiv od strane klijenta, on će ga dekriptovati. Klijent dekriptovanjem preuzima ključ sesije servisa za potrebe dalje komunikacije sa servisom. _ST_ će biti prosleđen servisu, kako bi servis autentifikovao korisnika. Servisu je potreban ključ sesije servisa kako ne bi kontaktirao _KDC_, pošto se servis i _KDC_ (najčešće _ResourceManager_) ne nalaze na istom čvoru. Servis može predstavljati _HDFS_ na _DataNode_ čvoru, dok se _KDC_ najčešće nalazi u okviru _ResourceManager_ čvora. 
+
+#### Faza 5
+
+Servis poseduje samo svoju heš vrednost. Klijent formira novu poruku ka servisu. Prvi deo poruke predstavlja principal klijenta kriptovan ključem sesije servisa _(5.1)_. Drugi deo poruke je _ST_ _(4.2)_. Servis će na osnovu svoje heš vrednosti (isto kao _KDC_) dekriptovati _ST_, čime pribavlja ključ sesije servisa. Nakon ovoga je u stanju da pomoću ključa sesije servisa dekriptuje prvi deo poruke i  autentifikuje korisnika. To praktično prestavlja poslednji korak, pošto je _Kerberos_ ispunio svoj zadatak i uspešno autentifikovao korisnika. Ostatak je deo _Hadoop_ autorizacije, tačnije autorizacije nad fajl sistemom _Linux_ distribucije, i procesa utvrđivanja korisničkih prava izvršavanja operacije nad resursom. Zbog toga postoji treći deo poruke, koji nije u nadležnosti _Kerberos_ komponente, i predstavlja specifikaciju operacije _(5.2)_.
+
+#### Konfiguracija _Kerberos_ komponente
+
+Instalirati _Kerberos_ klijent na svim čvorovima [[24]](#[24])[[25]](#[25])
+``` sh 
+yum install krb5-workstation krb5-libs
+```
+Instalirati _Kerberos_ server na _ResourceManager_ čvoru. Sve komande u nastavku će biti pokrenute na _ResourceManager_ čvoru koji je proglašen za administratorski.
+``` sh
+yum install krb5-server
+```
+Opciono preimenovati podrazumevanu `realm` vrednost u `kdc.conf` fajlu. 
+``` sh
+[realms]
+realm = {
+  ...
+}
+```
+Uneti poznate vrednosti za `realm`, `kdc` i `admin_server` u `krb5.conf` faju. Na administratorskom čvoru će se dodavati principali. `domen` je najčešće ista vrednost kao `realm`. Tačka na početku domena predstavlja sve poddomene u odnosu na domen. Ovime se definišu svi čvorovi koji učestvuju u _Kerberos DNS_ hijerarhiji.
+``` sh
+[realms]
+realm = {
+  kdc = RM_host
+  admin_server = RM_host
+}
+
+[domain_realm]
+.domen = realm
+```
+Dodati administratorske prinicipale u fajl `kadm5.acl`. Na mestu `*` se podrazumevaju svi korisnici koji predstavljaju administratore. Na primer:
+``` sh
+*/RM_host@realm
+```
+Kreirati _KDC_ bazu podataka upotrebom `kdb5_util` komande.
+``` sh
+kdb5_util create -r realm -s
+```
+Kreirati administratorkse principale unoseći principal i željenu lozinku.
+``` sh
+kadmin.local
+```
+Pokrenuti `krb5kdc` i `kadmin` servise. Ovime će biti podignut administratorski servis za upravljanje _Kerberos_ komponentom, kao i _KDC_ servis čija je funkcija ranije objašnjena. 
+``` sh
+service krb5kdc start
+service kadmin start
+```
+Sada je potrebno kreirati principale za sve dostupne korisnike, uključujući klijentske i servisne korisnike. Takođe je ovo potrebno uraditi za svaki čvor koji postoji u klasteru menjajući `host` vrednost. 
+``` sh
+addprinc korisnik/host@realm
+```
+Keš fajlovi će postojati na svim čvorovima koji poseduju _Kerberos_ klijent. Keš fajlovi će se generisati prema podrazumevanim podešavanjima u formatu `krb5cc_<uid>`. Specificirani format predstavlja željeno ponašanje, stoga se u nastavku neće dodatno obrađivati. 
+
+Keytab fajl se kreira u formatu `<user>.keytab` U njemu se skladište vrednosti principala i hešovane vrednosti lozinke [[26]](#[26]). Lozinke se inicijalno unose od strane administratora nakon čega se generiše heš vrednost koja se distribuira između klijentskog čvora i administratorskog čvora. Heš vrednost se generiše na osnovu vrednosti lozinke i principala. Za servisne korisnike je ovo obavezno uraditi, a za klijentske je poželjno. Korišćenjem keytab fajlova se izbegava interaktivni režim unosa kredencijala. Prema tome, servis bi prestao sa radom ako bi morao unositi lozinku jer ne bi bio u mogućnosti da obavlja automatsku autentifikaciju pri komunikaciji.
+
+Sledi kreiranje keytab fajlova za sve korisnike na svim čvorovima. U skladu sa prethodno navedenim, potrebno je kopirati keytab fajlove po čvorovima (ostvareno u nastavku). Dat je primer kreiranja jednog keytab fajla za jednog korisnika na svim čvorovima.
+``` sh
+xst -k naziv_fajla.keytab korisnik1/host1@realm korisnik1/host2@realm ... 
+```
+Kako bi se omogućila dostupnost javnih pristupnih tačaka, kao što je između ostalog potrebno učiniti za _YARN REST API_, potrebno je spojiti osnovne keytab fajlove sa _HTTP_ keytab fajlovima. Za ovaj istraživački rad je najbitnije da se `yarn.keytab` spoji sa `HTTP.keytab` fajlom.
+``` sh
+ktutil
+rkt naziv_fajla.keytab
+rkt HTTP.keytab
+wkt naziv_fajla.keytab
+```
+
+Da bi se komunikacija između svih čvorova ispravno autentifikovala, potrebno je kopirati `krb5.conf` fajl i keytab fajlove sa administratorskog čvora na sve čvorove. Odabir kopiranih fajlova zavisi od tipa čvora, za _DataNode-s_ će se kopirati `hdfs.keytab`, a ne `alice.keytab` na primer.  
+``` sh
+scp /etc/krb5.conf admin@ciljni_host:/home/hadoop/keytabs
+scp hdfs.keytab mapred.keytab yarn.keytab ... hadoop@ciljni_host:/home/hadoop/keytabs
+```
+Omogućiti _Kerberos_ autentifikaciju, _Hadoop_ autorizaciju, kao i mapiranje principala na lokalne korisnike operativnog sistema sledećim izmenama unutar `core_site.xml` fajl. Poslednje pravilo je potrebno proširiti za sve korisnike i zatim replicirati isti fajl na sve čvorove. Moguće je zadati najrazličitija pravila mapiranja principala na lokalne korisnike operativnog sistema upotrebom regularnih izraza [[27]](#[27]).
+``` xml
+hadoop.security.authentication = kerberos
+hadoop.security.authorization = true
+hadoop.security.auth_to_local =
+<value>
+  RULE:[2:$1/$2@$0](yarn/.*@realm)s/.*/yarn/
+  RULE:[1:$1@$0](alice@realm)s/.*/analyst_user/
+  DEFAULT
+</value>
+```
+Potrebno je uneti sledeće konfiguracije u `hdfs-site.xml` fajl na _DataNode_ i _NameNode_ čvorovima. Reč je o referenciranju `keytab` fajlova i postavljanju vrednosti principala radi prepoznavanja servisa od strane _Kerberos_ komponente.
+``` xml
+dfs.namenode.keytab.file=/home/hadoop/hadoop/etc/hadoop/hdfs.keytab
+dfs.namenode.kerberos.principal=hdfs/host@realm
+dfs.datanode.keytab.file=/home/hadoop/hadoop/etc/hadoop/hdfs.keytab
+dfs.datanode.kerberos.principal=hdfs/host@realm
+```
+Uneti slične izmene i u `mapred-site.xml` fajlu na svim _YARN_ čvorovima. Ovime se vrše postavke u vezi praćenja poslova od strane _JobHistory_ čvora na nivou _Kerberos_ komponente. 
+``` xml
+mapreduce.jobhistory.keytab = /home/hadoop/hadoop/etc/hadoop/mapred.keytab
+mapreduce.jobhistory.principal = mapred/host@realm
+```
+Slične izmene načiniti u `yarn-site.xml` fajlu na _ResourceManager_ i _NodeManager_ čvorovima.
+``` xml
+yarn.resourcemanager.keytab = /home/hadoop/hadoop/etc/hadoop/yarn.keytab
+yarn.resourcemanager.principal = yarn/host@realm
+yarn.nodemanager.keytab = /home/hadoop/hadoop/etc/hadoop/yarn.keytab
+yarn.nodemanager.principal = yarn/host@realm
+```
+Potrebno je podesiti _SPNEGO_ _wrapper_ oko _Kerberos_ autentifikacije za javno dostupne pristupne tačke (_YARN REST API i YARN Web UI_). Dodati konfiguracije u `yarn-site.xml` fajl samo na _ResourceManager_ čvoru [[28]](#[28]).
+``` xml
+yarn.resourcemanager.webapp.spnego-keytab-file = /home/hadoop/hadoop/etc/hadoop/yarn.keytab
+yarn.resourcemanager.webapp.spnego-principal = yarn/host@realm
+```
+Za _DataNode_ čvorove je potrebno posebno naglasiti pod kojim korisnikom se ti servisi pokreću menjajući `hadoop-env.sh` fajl.
+``` sh
+export HADOOP_SECURE_DN_USER=hadoop
+```
+Za servisne principale obaviti autentifikaciju pre pokretanja servisa korišćenjem .keytab fajlove. Klijentski korisnici će sami za sebe pokretati `kinit` komandu ili će se i za njih kopirati `.keytab` fajlovi.
+``` sh
+# Standardna prijava
+kinit your_principal@REALM
+```
+``` sh
+# Prijava korišćenjem keytab fajla
+kinit -kt /home/hadoop/keytabs/yarn.keytab yarn/host@REALM
+```
+_Usled kompleksnosti Kerberos konfiguracije, pojedine komande su apstrakovane._
+
+Dakle, konfiguracija _Kerberos_ komponente u _Hadoop_ klasteru uključuje instalaciju _Kerberos_ klijenta i servera, kreiranje i podešavanje principala i `.keytab` fajlova, kao i kopiranje potrebnih fajlova na sve čvorove. Pored toga, potrebno je mapirati _Kerberos_ prinicipale na lokalne korisnike, i omogućiti _SPNEGO_ autentifikaciju za _YARN REST API_ servis.
+
 # Reference
 
 <a id="[1]"></a>
@@ -447,4 +612,22 @@ __Napomena:__ Pri izgradnji složenije skripte savet je koristiti regularne izra
 
 <a id="[22]"></a>
 [22] [LinuxContainerExecutor Security Best Practices](https://community.cloudera.com/t5/Community-Articles/LinuxContainerExecutor-Security-Best-Practices/ta-p/244576) _(Autor: amiller, Pristupano: _10. avgusta, 2025_)_
+
+<a id="[23]"></a>
+[23] [Kerberos Explained (Animated)](https://www.youtube.com/watch?v=3T_GOYYTJXA) _(Autor: Terminate and Stay Resident, Pristupano: _14. avgusta, 2025_)_
+
+<a id="[24]"></a>
+[24] [Kerberos Setup for Apache Hadoop Multi-Node Cluster](https://ravi-chamarthy.medium.com/kerberos-setup-for-apache-hadoop-multi-node-cluster-6bd8a2fbe680) _(Autor: Ravi Chamarthy, Pristupano: _16. avgusta, 2025_)_
+
+<a id="[25]"></a>
+[25] [Hadoop — HDFS and YARN Kerberos based Configuration](https://ravi-chamarthy.medium.com/hadoop-hdfs-and-yarn-kerberos-based-configuration-d23d286fdbcc) _(Autor: Ravi Chamarthy, Pristupano: _16. avgusta, 2025_)_
+
+<a id="[26]"></a>
+[26] [How is a password encrypted into a keytab file?](https://stackoverflow.com/questions/33784418/how-is-a-password-encrypted-into-a-keytab-file?rq=3) _(Autor: frasertweedale, Pristupano: _18. avgusta, 2025_)_
+
+<a id="[27]"></a>
+[27] [Hadoop Security: Protecting your big data platform - Mapping Kerberos Principals to Usernames](https://www.oreilly.com/library/view/hadoop-security/9781491900970/) _(Autor: Ben Spivey, Joey Echeverria, Izdato: _01. jula, 2015_)_
+
+<a id="[28]"></a>
+[28] [Hadoop Security: Protecting your big data platform - Authentication, Configuration](https://www.oreilly.com/library/view/hadoop-security/9781491900970/) _(Autor: Ben Spivey, Joey Echeverria, Izdato: _01. jula, 2015_)_
 
