@@ -593,6 +593,37 @@ mapred streaming      \
   -output  /output
 ```
 
+<a id="M4121a"></a>
+### M4121a - Terminisanje neaktivnog posla
+Otkazivanje posla koji ne proizvodi napredak. Dakle, ako posao ne čita iz ulazne datoteke, ne upisuje u izlazne datoteke ili generalno ne napreduje, biće prekinut nakon određenog vremena.
+``` xml
+<property>
+  <name>mapreduce.task.timeout</name>
+  <value>120</value> 
+</property>
+```
+
+<a id="M4121b"></a>
+### M4121b - Zabrana ponovnog pokušaja izvršavanja
+Ukoliko _ApplicationMaster_ pomisli da je posao neuspešno izvršen, ne bi mu trebalo dozvoliti ponovni pokušaj, a naročito ne beskonačan broj pokušaja.
+``` xml
+<property>
+  <name>yarn.resourcemanager.am.max-attempts</name>
+  <value>1</value> 
+</property>
+
+<property>
+  <name>mapreduce.map.maxattempts</name>
+  <value>1</value>
+</property>
+
+<property>
+  <name>mapred.reduce.max.attempts</name>
+  <value>1</value>
+</property>
+```
+__Napomena:__ Na nivou čitavog istraživačkog rada uvodi se pretpostavka da se sve bezbednosne kontrole koje se zadaju u vidu konfiguracija _Hadoop_ klastera smatraju pouzdanim. S obzirom na to da su ove bezbednosne kontrole definisane na nivou dizajna i striktno kontrolisane od strane _Hadoop_ modula, biće im ukazano potpuno poverenje. Trenutno je procenjeno da nije potrebno razmatrati eventualne scenarije u kojima bi neka kontrola mogla da izda, jer je odgovornost _Hadoop_ modula da rešava takve situacije. Obavezno je redovno ažuriranje verzije _Hadoop_ modula i praćenje obaveštenja o svim izmenama.
+
 ## Pokretanje pozadinskog podprocesa
 
 Vrlo slično kao i prethodni primer napada, samo što je ovog puta realizaciju napada teže sanirati. Postiže se beskonačno izvršavanje u _map_ kontejnerima, na način da se osnovna shell sesija _spawn-uje_, otvori proces i zatim natera pomoću `nohup` komande da se pokreće u pozadini. U konačnom će čitav posao trajati dugo, jer operacija _map_ u aplikaciji jeste završena, ali podproces nije. Na ovaj način se efektno _map_ kontejner nikada ne terminira, iako se zvanično posao koji ga je kreirao jeste terminirao.
@@ -603,6 +634,15 @@ public class Mapper extends Mapper<LongWritable, Text, Text, IntWritable> {
         Runtime.getRuntime().exec("nohup bash -c 'sleep 99999' &");
     }
 }
+```
+<a id="M4121c"></a>
+### M4121c - Terminisanje beskonačnih pozadinskih procesa
+Zahvaljujući sledećoj bezbednosnoj kontroli, neće se desiti situacija da su paralelno pokrenuti pozadinski procesi unutar _map_ kontejnera ostali da se izvrašavaju i nakon uspešnog ili neuspešnog završetka posla. 
+``` xml
+<property>
+  <name>yarn.nodemanager.container-executor.cleanup.process-tree</name>
+  <value>true</value>
+</property>
 ```
 ## Zabranjivanje deaktivacije posla
 
@@ -619,6 +659,23 @@ public class Mapper extends Mapper<LongWritable, Text, Text, IntWritable> {
     }
 }
 ```
+<a id="M4121d"></a>
+### M4121d - Terminisanje nereagujućih kontejnera
+Zahvaljujući sledećoj bezbednosnoj kontroli biće postignuta bezbedna terminacija kontejnera. Ukoliko kontejner ne reaguje na regularan signal za terminaciju `SIGTERM`, biće poslat `SIGKILL` signal koji rešava problem terminacije. Potrebno je definisati vreme nakon koga se šalje `SIGKILL` signal. 
+``` xml
+<property>
+  <name>yarn.nodemanager.container-executor.process-kill-wait-ms</name>
+  <value>1</value> 
+</property>
+```
+<a id="M4121e"></a>
+### M4121e - Banovanje korisnika
+
+Sledi specifikacija jedne opšte bezbednosne kontrole, koju je dobro primenjivati u raznim situacijama. Kada se prepozna maliciozni korisnik, moguće ga je istog momenta banovati sa klastera. U `container-executor.cfg` fajlu podesiti vrednost korisničkog imena banovanog korisnika. Reč je o definiciji na nivou lokalnog korisnika, stoga je potrebno kopirati konfiguracioni fajl na sve čvorove.
+``` sh
+banned.users=alice
+```
+
 # Reference
 
 <a id="[1]"></a>
