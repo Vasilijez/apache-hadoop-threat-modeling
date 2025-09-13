@@ -920,6 +920,10 @@ fi
 yarn jar "$@"
 ```
 
+# Zaključak
+Uvođenjem predloženih bezbednosnih kontrola će se velika većina pretnji, kako za _YARN_ komponentu tako i za čitav _Hadoop_ klaster, otkloniti. Mnoge od ovih bezbednosnih kontrola su trivijalne, "jeftino" se mogu uvesti i pružaju dobru osnovu za bilo koji _Hadoop_ klaster.
+
+
 # Reference
 
 <a id="[1]"></a>
