@@ -253,6 +253,17 @@ Pokrenuti beskonačnu petlju:
 nohup sh -c "while true; do :; done" &
 ```
 
+## Mitigacije
+Većina standardnih bezbednosnih kontrola koje se koriste kod _Hadoop_ klastera neće u potpunosti otkloniti ovu klasu napada.
+Površina za napad će se značajno smanjiti ako se uvede bezbednosni mehanizam _Kerberos_. Tada će se upotreba klastera omogućiti samo autentifikovanim i autorizovanim korisnicima. Nažalost, i dalje je moguće pokretanje malicioznih aplikacija od strane regularnih korisnika. 
+
+Plan je postaviti više bezbednosnih kontrola, kako bi bezbednosna svojstva resursa ili servisa bila apsolutno očuvana. To će biti urađeno na sledeći način:
+1. Zabranom bilo kakve komunikacije izvan kontejnera, osim ako to nisu druge komponente _Hadoop_ klastera [[17]](#[17]).
+2. Zabranom mapiranja privilegija _yarn_ korisnika između _NodeManager_ čvora i kontejnera, uz eliminaciju ključnih ranjivosti. Ovaj pristup je neophodan kako napadač ne bi isključio prethodno uspostvljena _firewall_ podešavanja.
+3. Uspostavljanjem pravila za proveru tipa aplikacije. Potrebno je zabraniti sve aplikacije koje žele da pokrenu _shell_ sesiju. Prve dve bezbednosne kontrole su dovoljne, ali kako bi se sistem dodatno zaštitio trebalo bi postaviti i ovu kontrolu. Za veliku većinu _Hadoop_ klastera nije normalno ponašanje pokretanje _shell_ sesije na _ApplicationMaster_ kontejneru.
+4. Postavljanjem jake autentifikacije i autorizacije. Kerberos.
+5. Sprečavanjem direktnog pristupa čvorovima uvođenjem _gateway_ čvora. Preveliki je rizik dozvoliti bilo kom korisniku da se obraća bilo kom čvoru klastera.
+
 # Reference
 
 <a id="[1]"></a>
@@ -302,4 +313,7 @@ nohup sh -c "while true; do :; done" &
 
 <a id="[16]"></a>
 [16] [Hadoop RPC Unauthorized](https://github.com/WHIJK/hadoop-rpc-unauthorized/blob/main/src/main/java/client/exp.java) _(Autor: WHIJK, Pristupano: _3. avgusta, 2025_)_
+
+<a id="[17]"></a>
+[17] [Hadoop Security: Protecting your big data platform -  Operating System Security](https://www.oreilly.com/library/view/hadoop-security/9781491900970/) _(Autor: Ben Spivey, Joey Echeverria, Izdato: _01. jula, 2015_)_
 
