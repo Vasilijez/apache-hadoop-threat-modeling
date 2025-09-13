@@ -264,6 +264,67 @@ Plan je postaviti više bezbednosnih kontrola, kako bi bezbednosna svojstva resu
 4. Postavljanjem jake autentifikacije i autorizacije. Kerberos.
 5. Sprečavanjem direktnog pristupa čvorovima uvođenjem _gateway_ čvora. Preveliki je rizik dozvoliti bilo kom korisniku da se obraća bilo kom čvoru klastera.
 
+<a id="M4111a"></a>
+### M4111a - Kontrola mrežnog saobraćaja 
+U nastavku će biti ilustrovana sekvenca potrebnih komandi sa fokusom na isključivanje izlaznog saobraćaja kontejnera. Razmena saobraćaja između komponenti _Hadoop_ klastera će biti omogućena. Ugao posmatranja će biti jedan _NodeManager_ čvor. Koristiće se alat koji je najčešći izbor u _Linux_ distribucijama, `iptables` [[18]](#[18]).
+
+Poništiti trenutna pravila za spoljašnji i unutrašnji saobraćaj, iako je fokus na spoljašnjem.
+``` sh 
+iptables -F OUTPUT
+iptables -F INPUT
+```
+Uvesti politiku kojom zabranjujemo sav ulazni i izlazni saobraćaj.
+``` sh 
+iptables -P INPUT DROP
+iptables -P OUTPUT DROP
+```
+Dozvoliti saobraćaj unutar čvora.
+``` sh
+iptables -A OUTPUT -o lo -j ACCEPT
+iptables -A INPUT -i lo -j ACCEPT
+``` 
+Dozvoliti razmenu saobraćaja sa _NameNode_ čvorom.
+``` sh
+iptables -A OUTPUT -p tcp -d namenode -j ACCEPT
+iptables -A INPUT -p tcp -s namenode -j ACCEPT
+```
+Dozvoliti razmenu saobraćaja sa _ResourceManager_ čvorom.
+``` sh
+iptables -A OUTPUT -p tcp -d resourcemanager -j ACCEPT
+iptables -A INPUT -p tcp -s resourcemanager -j ACCEPT
+```
+Dozvoliti razmenu saobraćaja sa _DataNode_ čvorovima.
+``` sh
+iptables -A OUTPUT -p tcp -d datanode1 -j ACCEPT
+iptables -A INPUT -p tcp -s datanode1 -j ACCEPT
+iptables -A OUTPUT -p tcp -d datanode2 -j ACCEPT
+iptables -A INPUT -p tcp -s datanode2 -j ACCEPT
+```
+Dozvoliti razmenu saobraćaja sa _HistoryServer_ čvorom.
+```sh
+iptables -A OUTPUT -p tcp -d historyserver -j ACCEPT
+iptables -A INPUT -p tcp -s historyserver -j ACCEPT
+```
+Dozvoliti razmenu saobraćaja sa dodatnim _NodeManager_ čvorom.
+```sh
+iptables -A OUTPUT -p tcp -d nodemanager2 -j ACCEPT
+iptables -A INPUT -p tcp -s nodemanager2 -j ACCEPT
+```
+Dozvoliti razmenu saobraćaja sa _DNS_ serverom. 
+```sh
+iptables -A OUTPUT -p tcp --dport 53 -d dns -j ACCEPT
+iptables -A OUTPUT -p udp --dport 53 -d dns -j ACCEPT
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -p tcp -s dns -j ACCEPT
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -p udp -s dns -j ACCEPT
+```
+__Napomena:__ Može se primetiti da je izlazna (inicijalna) komunikacija sa _DNS_ serverom zadata korišćenjem porta 53. Nakon uspostavljanja komunikacije, _DNS_ server će odgovarati na nasumično izabran port od strane _NodeManager_ čvora. Zabranjeno je da _DNS_ server pruža odgovor na bilo koji port, već na prethodno prosleđen port. Ovo je moguće ostvariti praćenjem stanja konekcije. Postoji veća količina portova za svaki od čvorova. Samo za _ResourceManager_ čvor postoji minimum 5 portova na kojima sluša [[19]](#[19]). Stoga je potrebno biti svestan svih portova na kojima se obavlja komunikacija za svaki od čvorova. Praktično, svaki čvor može sa svakim pričati. Ako napadač osvoji jedan čvor on će vrlo lako pronaći otvorene portove drugih čvorova, čime se obesmišljava limitiranje komunikacije samo na definisanim portovima, a skripta i izvedba se značajno komplikuju. Iako se smatra da je dobra praksa to uraditi, trenutno je preskočeno. Obavezno poraditi na drugim bezbednosnim kontrolama koje pružaju bolju zaštitu na nivou međučvorova.
+
+Prethodnu skriptu je potrebno pokrenuti na svim _NodeManager_ čvorovima. Savet je da se uz minimalne izmene, skripta pokrene i na ostalim čvorovima. Obratiti pažnju kod _ResourceManager_ čvora, pošto je potrebno dozvoliti komunikaciju za _YARN REST API_ i _YARN Web UI_ servise i ka eksternim entitetima. 
+
+
+![Mitigacija M4111a](./Mitigacija_M4111a.png)
+_Slika 6: Rezultat pokretanja crypto mining posla nakon uvođenja bezbednosne kontrole_
+
 # Reference
 
 <a id="[1]"></a>
@@ -316,4 +377,10 @@ Plan je postaviti više bezbednosnih kontrola, kako bi bezbednosna svojstva resu
 
 <a id="[17]"></a>
 [17] [Hadoop Security: Protecting your big data platform -  Operating System Security](https://www.oreilly.com/library/view/hadoop-security/9781491900970/) _(Autor: Ben Spivey, Joey Echeverria, Izdato: _01. jula, 2015_)_
+
+<a id="[18]"></a>
+[18] [Hadoop Security: Protecting your big data platform - Host Firewalls](https://www.oreilly.com/library/view/hadoop-security/9781491900970/) _(Autor: Ben Spivey, Joey Echeverria, Izdato: _01. jula, 2015_)_
+
+<a id="[19]"></a>
+[19] [Hadoop Security: Protecting your big data platform - Common Hadoop service ports](https://www.oreilly.com/library/view/hadoop-security/9781491900970/) _(Autor: Ben Spivey, Joey Echeverria, Izdato: _01. jula, 2015_)_
 
