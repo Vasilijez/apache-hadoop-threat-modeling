@@ -6,7 +6,7 @@ Na dijagramu toka podataka, slika 1, predstavljena je osnovna postavka _Hadoop_ 
 
 ![Apstraktni dijagram](./Apstraktni_dijagram.svg)
 
-_Slika 1: Dijagram toka podataka na najvišem nivou apstrakcije._
+_Slika 1: Dijagram toka podataka na najvišem nivou apstrakcije_
 
 ## Dekompozicija modula
 U zavisnosti od postavke _Hadoop_ klastera moguće je uključivanje različitih komponenti. U zavisnosti od tipa komponente moguće je povećati površinu za napad, ali i adekvatnije upravljati bezbednošću. Na primer, uvođenjem _ZooKeeper_ ili _Kerberos_ komponente modul će povećati stepen bezbednosti. Uvođenjem komponente kao što je _Apache Hive_ se povećava površina za napad, jer se uvodi komponenta koja nije jezgro (engl. _core_) _Hadoop_ modula. Pitanjem bezbednosti klastera je moguće baviti se na sledeća tri načina:
@@ -14,15 +14,15 @@ U zavisnosti od postavke _Hadoop_ klastera moguće je uključivanje različitih 
 2. Oslanjanjem na _Hadoop_ bezbednosne mehanizme.
 3. Oslanjanjem na eksterne komponente koje postižu veći stepen bezbednosti.
 
-_Hadoop_ klaster koji služi kao referentni model za potrebe detaljnije analize podrazumeva napredne bezbednosne mehanizme, kao što je recimo upotreba eksterne komponente _Kerberos_. Ipak, najrealnije sagledavanje nekog modula sa aspekta bezbednosti bi bilo kroz osnovne (podrazumevane) nivoe zaštite, što će se imati na umu tokom ovog istraživačkog rada. 
+Najrealnije sagledavanje nekog modula sa aspekta bezbednosti bi bilo kroz osnovne (podrazumevane) nivoe zaštite, što će se imati na umu tokom ovog istraživačkog rada. 
 
 ![Dekomponovan dijagram](./Kompletan_dijagram.svg)
 
-_Slika 2: Dijagram toka podataka dekomponovan na višem nivou detaljnosti._
+_Slika 2: Dijagram toka podataka dekomponovan na višem nivou detaljnosti_
 
 U nastavku će biti pojašnjeni elementi dijagrama analiziranog modula.
 
-_Clients_ predstavljaju eksterni entitet i to bi bili korisnici ili aplikacije koje mogu komunicirati pomoću _Hadoop CLI-a, WebHDFS-a_, biblioteka programskih jezika i slično.
+_Clients_ predstavljaju eksterni entitet i to bi bili korisnici ili aplikacije koje mogu komunicirati pomoću _Hadoop CLI-a, WebHDFS-a_, biblioteka programskih jezika i slično. Aplikacija u zavisnosti od konteksta može predstavljati korisnika ili biti sinonim za poslove. 
 
 #### Hijerahija odnosa
 Potrebno je objasniti hijerarhiju odnosa između čvorova. Uvode se pojmovi nadređeni (engl. _master_) i podređeni (engl. _slave_) čvor. 
@@ -32,7 +32,7 @@ Potrebno je objasniti hijerarhiju odnosa između čvorova. Uvode se pojmovi nadr
 
 ![Master-slave hijerarhija](./Master_slave_hijerarhija.svg)
 
-_Slika 3: Dijagram master-slave hijerarhije odnosa._
+_Slika 3: Dijagram master-slave hijerarhije odnosa_
 
 Procesni čvorovi _Scheduler_ i _ApplicationManager_, su posledično nadređeni procesnim čvorovima _ApplicationMaster_, _NodeManager_ i _Container_. Takođe, procesni čvor _NameNode_ je nadređen _DataNode_ procesnim čvorovima.
 
@@ -64,7 +64,7 @@ Na slici 4 je predstavljen dijagram toka podataka _Hadoop_ modula dekomponovan n
 
 ![Dekomponovan dijagram](./Kompletan_dijagram_sa_resursima.svg)
 
-_Slika 4: Dijagram tokova podataka sa prikazom resursa._
+_Slika 4: Dijagram tokova podataka sa prikazom resursa_
 
 | ID | Kritični resursi |
 | -- | ------ |
@@ -77,7 +77,7 @@ _Slika 4: Dijagram tokova podataka sa prikazom resursa._
 | R7 | Logovi |
 | R8 | Meta-podaci |
 
-_Tebela 1: Dijagram tokova podataka sa prikazom kritičnih resursa._
+_Tebela 1: Dijagram tokova podataka sa prikazom kritičnih resursa_
 
 **Napomene:** 
 - U slučaju direktne veze procesnog čvora sa skladištem podrazumeva se upotreba podataka tog skladišta.
@@ -100,7 +100,7 @@ U nastavku je analiziran svaki kritični resurs kroz prizmu mogućih pretnji, za
 | R7 | | P72 | Izazivanje nedostupnosti generisanjem logova | D
 | R8 | Meta-podaci | P81 | Otmica čvorova | D, I 
 
-_Tebela 2. Prikaz potencijalnih pretnji visokog nivoa u odnosu na kritične resurse._
+_Tebela 2: Prikaz potencijalnih pretnji visokog nivoa u odnosu na kritične resurse_
 
 ### Analiza pretnji visokog nivoa
 
