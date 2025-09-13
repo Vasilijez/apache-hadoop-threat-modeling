@@ -570,6 +570,55 @@ Postoje tri načina za komunikaciju sa _gateway_ čvorom odnosno klasterom:
 2. Nad klasterom je moguće otvoriti _SSH_ sesiju. Potrebno je ulogovati se sa _Kerberos_ kredencijalima, čime se ostvaruje pristup servisima kao i lokalnom fajl sistemu. Instalirana podrška za _Hadoop_ klijent omogućava korisniku pristup distribuiranoj obradi podataka i distribuiranom fajl sistemu.
 3. Ako se koriste _REST API_ interfejsi, uz pomoć alata kao što je _curl_, situacija je nešto kompleksnija jer je potrebno generisati _TGT_ _(Ticket Granting Ticket)_. Korisnik može iskoristiti već izgenerisani token (1.) od strane veb pretraživača, ili mora instalirati _Kerberos_ klijent kako bi izgenerisao token.
 
+<a id="A4121"></a>
+# A4121. Zombi poslovi
+
+Zombi poslovi su svi poslovi koje je teško ili nemoguće terminirati. Osnovna karakteristika zombi poslova je _dugotrajnost_. Moguće je i samo nenamernim lošim postavkama poslova vremenom izazvati kolaps klastera. Napadači mogu biti raznovrsni. Običan radnik može biti nesvestan loše konfiguracije klastera i greškom izazvati zombi posao. Maliciozni napadači mogu biti interni ili eksterni u odnosu na organizaciju, pa samim tim i u odnosu na posmatrani modul. Maliciozni napadači su posebno zainteresovani za izvođenje ovog napada. Kada nedostaju specifične bezbednosne kontrole, napad je vrlo jednostavan i poguban za izvođenje. Velika problematika ovog napada je mogućnost zadavanja raznovrsnih poslova. Činjenica je da je teško analizirati i utvrditi semantiku posla. Prepoznavanje korišćenih komandi je ranije urađeno mitigacijom _[M4111c](#M4111c)_. Kao što je već rečeno, ovakva bezbednosna kontrola pomaže u značajnom broju slučajeva, iako se fokusira samo na komande, ne i na dublju semantiku. Međutim, preterana restriktivnost komandi takođe ograničava mogućnost korišćenja u mnogim slučajevima distribuirane obrade podataka. Bilo kako bilo, poslovi se mogu zamaskirati tako da im se teško razazna prava namera. Ukoliko se poslovi nikada ne završavaju, relativno je lako narušiti bezbednosno svojstvo dostupnosti servisa _(denial of service)_. Stoga, sprovođenjem ovog napada biće realizovana pretnja nedostupnosti _YARN_ komponente. Zanimljivo je da se dostupnost klastera vrlo lako može narušiti, i to ne samo u slučaju distribuiranog napada, već i napadom od strane jedne osobe.
+
+## Beskonačno izvršavanje mapper funkcije
+
+Ovo bi bio standardan primer napada pokretanjem zombi poslova. Napadač može pokušati sa uspavljivanjem niti. Tada će koristiti _mapper_ funkciju beskonačnog trajanja, pri čemu se _reducer_ funkcija nikada neće pozvati i izvršiti:
+``` python
+def mapper:
+    while True:
+        time.sleep(1000)
+```
+Primer pokretanja posla opisanog koristeći _Python_ programski jezik:
+``` sh
+mapred streaming      \
+  -files   mapper.py  \
+  -mapper  mapper.py  \
+  -reducer /bin/cat   \
+  -input   /input     \
+  -output  /output
+```
+
+## Pokretanje pozadinskog podprocesa
+
+Vrlo slično kao i prethodni primer napada, samo što je ovog puta realizaciju napada teže sanirati. Postiže se beskonačno izvršavanje u _map_ kontejnerima, na način da se osnovna shell sesija _spawn-uje_, otvori proces i zatim natera pomoću `nohup` komande da se pokreće u pozadini. U konačnom će čitav posao trajati dugo, jer operacija _map_ u aplikaciji jeste završena, ali podproces nije. Na ovaj način se efektno _map_ kontejner nikada ne terminira, iako se zvanično posao koji ga je kreirao jeste terminirao.
+``` java
+public class Mapper extends Mapper<LongWritable, Text, Text, IntWritable> {
+    @Override
+    protected void map(LongWritable key, Text value, Context context) throws IOException {
+        Runtime.getRuntime().exec("nohup bash -c 'sleep 99999' &");
+    }
+}
+```
+## Zabranjivanje deaktivacije posla
+
+Pretpostavka je da se pokrene neki posao dugog trajanja. Uslov je da administrator ili _NodeManager_ primeti ovaj posao čije izvršavanje beskonačno traje. Zatim će se probati sa isključivanjem ovog posla od strane administratora komandom `yarn application -kill` ili od strane _NodeManager_ čvora automatski. U oba slučaja signal za terminaciju `SIGTERM` biva poslat, ali će ga `ShutDownHook` uhvatiti i sprečiti terminaciju _JVM-a_. 
+Dalje utvrđivanje konkretne _PID_ vrednosti na konkretnom _NodeManager_ čvoru od strane administratora uopšte nije jednostavno. Moguće je namerno kreirati ekstremno veliki broj podprocesa umesto samo jednog. Rezultat bi bio veliki broj nepravilno terminiranih poslova i još veći broj nepravilno terminiranih podprocesa.
+``` java
+public class Mapper extends Mapper<LongWritable, Text, Text, IntWritable> {
+    @Override
+    protected void map(LongWritable key, Text value, Context context) throws IOException {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            while (true) {} 
+        }));
+        Thread.sleep(100000);
+    }
+}
+```
 # Reference
 
 <a id="[1]"></a>
