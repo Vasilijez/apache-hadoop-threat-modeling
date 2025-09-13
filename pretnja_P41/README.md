@@ -545,6 +545,31 @@ _Usled kompleksnosti Kerberos konfiguracije, pojedine komande su apstrakovane._
 
 Dakle, konfiguracija _Kerberos_ komponente u _Hadoop_ klasteru uključuje instalaciju _Kerberos_ klijenta i servera, kreiranje i podešavanje principala i `.keytab` fajlova, kao i kopiranje potrebnih fajlova na sve čvorove. Pored toga, potrebno je mapirati _Kerberos_ prinicipale na lokalne korisnike, i omogućiti _SPNEGO_ autentifikaciju za _YARN REST API_ servis.
 
+<a id="M4111e"></a>
+### M4111e - Uvođenje gateway čvora
+
+![Nadogradnja Hadoop klastera upotrebom gateway čvora](./Gateway.svg)
+
+_Slika 8: Nadogradnja Hadoop klastera upotrebom gateway čvora_
+
+Ranije je uvedena bezbednosna kontrola [M4111a](#M4111a), kojom se zabranjuje izlazni saobraćaj, što je prilično restriktivno. Potrebno je ciljano dozvoliti izlazni saobraćaj, jer u suprotnom nije moguće obraditi zahteve korisnika. Ova bezbednosna kontrola se uvodi kao dobra praksa, jer je rizično dozvoliti direktan pristup bilo kom čvoru klastera. Kako bi se sprečio direktan pristup čvorovima, potrebno je obezbediti jedan čvor koji će funkcionisati kao _proxy_ server za komunikaciju korisnika sa _Hadoop_ klasterom. Na taj način se sprovodi izolacija klastera, čime se dodatno smanjuje površina za napad.
+Kada je reč o gateway čvoru, mogu se koristiti različiti tipovi čvorova sa ovom ulogom. U praksi se najčešće koriste gateway čvorovi koji u pozadini pokreću _Apache Knox_ komponentu, specijalizovnu za _Hadoop_ klastere. Takođe, mogu se sresti i verzije sa _NGINX_ komponentom, ali je to obično retkost zbog kompleksnosti implementacije.
+
+Ova bezbednosna kontrola se neće detaljno obrađivati. Prethodne bezbednosne kontrole je potrebno minimalno korigovati. Preuzeti sledeće korake implementacije:
+1. Kreirati sve lokalne korisnike.
+2. Instalirati _Hadoop_ klijent.
+3. Dozvoliti izlaznu komunikaciju klastera samo sa gateway čvorom.
+4. Instalirati _Kerberos_ klijenta na gateway čvoru.  
+5. Izvršiti preostalu konfiguraciju gateway čvora, ali i ostalih čvorova kako bi se međusobno prepoznali.
+
+Dakle, na svim čvorovima je instaliran _Kerberos_ klijent, dok je na _ResourceManager_ čvoru instaliran _Kerberos_ server. Klaster se nalazi unutar izolovane mreže, dok jedan _gateway_ čvor stoji ispred klastera i omogućava komunikaciju eksternih entiteta sa klasterom.
+
+Postoje tri načina za komunikaciju sa _gateway_ čvorom odnosno klasterom:
+
+1. _Gateway_ čvor objavljuje sve javno dostupne servise (prvenstveno _YARN Web UI, YARN REST API, i eventualno Web HDFS, JobHistory Web UI_, ...) i povezuje ih sa matičnim čvorovima kao što su _ResourceManager, JobHistory, NameNode_ itd. Korišćenje ovih servisa je jednostavno putem veb pretraživača (_Chrome, Firefox_) koji pružaju ugrađenu _SPNEGO_ podršku. Od korisnika se očekuje unos _Kerberos_ kredencijala. Mana ovog načina komunikacije je nemogućnost kreiranja poslova.
+2. Nad klasterom je moguće otvoriti _SSH_ sesiju. Potrebno je ulogovati se sa _Kerberos_ kredencijalima, čime se ostvaruje pristup servisima kao i lokalnom fajl sistemu. Instalirana podrška za _Hadoop_ klijent omogućava korisniku pristup distribuiranoj obradi podataka i distribuiranom fajl sistemu.
+3. Ako se koriste _REST API_ interfejsi, uz pomoć alata kao što je _curl_, situacija je nešto kompleksnija jer je potrebno generisati _TGT_ _(Ticket Granting Ticket)_. Korisnik može iskoristiti već izgenerisani token (1.) od strane veb pretraživača, ili mora instalirati _Kerberos_ klijent kako bi izgenerisao token.
+
 # Reference
 
 <a id="[1]"></a>
