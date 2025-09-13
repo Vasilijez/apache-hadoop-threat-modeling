@@ -21,6 +21,15 @@ Par napomena koje su uvedene radi preglednosti dijagrama:
 * Keberos kao bezbednosna kontrola se praktično kod svih napada preporučuje, pa je izostavljena. Smatra se da automatski podrazumeva i autorizaciju, ne samo autentifikaciju.
 * Trivijalne bezbednosne kontrole, poput ažuriranja verzija zavisnosti, se podrazumevaju. 
 
+| IDP | Pretnja niskog nivoa | STRIDE tip
+| ----- | --- | --- | 
+| P411 | Pokretanje _malware_ poslova | Tampering
+| P412 | Nedostupnost _YARN_ komponente | Denial of service
+| P413 | Prisluškivanje poslova | Information disclosure
+| P414 | Sabotaža i krađa tuđih poslova | Tampering, Spoofing
+| P415 | Preuzimanje kontrole klastera | Denial of service, Elevation of privilege
+
+_Tabela 1: Prikaz potencijalnih pretnji niskog nivoa u odnosu na STRIDE tip_
 
 U nastavku su predstavljeni odabrani napadi. Oni su definisani tako da što jasnije grupišu klase napada. U skladu sa procenjenim rizikom, izdvojeni napadi predstavljaju najučestalije realizacije pretnji u kontekstu poslova na nivou _YARN_ komponente [[6]](#[6]).
 

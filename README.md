@@ -86,19 +86,19 @@ _Tebela 1: Dijagram tokova podataka sa prikazom kritičnih resursa_
 
 U nastavku je analiziran svaki kritični resurs kroz prizmu mogućih pretnji, zatim su određena bezbednosna svojstva resursa, koje pretnje, ukoliko su realizovane, mogu narušiti. 
 
-| IDR | Kritični resursi | IDP | Pretnje | STRIDE tip
-| -- | ------ | ----- | --- | --- | 
-| R1 | Konfiguracioni fajlovi | P11 | Zloupotreba loše konfiguracije | S, T, I, D
-| R2 | Blokovi podataka | P21 | Neovlašćeni pristup podacima | I
-| R2 |  | P22 | Neovlašćeno upravljanje podacima | I 
-| R3 | Alocirani računarski resursi | P31 | Izazivanje nedostupnosti modula | D
-| R3 |  | P32 | Zloupotreba alociranih resursa | T
-| R4 | Poslovi i zadaci | P41 | Manipulacija poslovima | T, I, D
-| R5 | Rezultati | P51 | Manipulacija rezultatima | T 
-| R6 | Informacije o statusu | P61 | Lažiranje informacija | T
-| R7 | Logovi | P71 | Maliciozno čitanje i pisanje | I, T, R
-| R7 | | P72 | Izazivanje nedostupnosti generisanjem logova | D
-| R8 | Meta-podaci | P81 | Otmica čvorova | D, I 
+| IDR | Kritični resursi | IDP | Pretnje 
+| -- | ------ | ----- | --- |
+| R1 | Konfiguracioni fajlovi | P11 | Zloupotreba loše konfiguracije 
+| R2 | Blokovi podataka | P21 | Neovlašćeni pristup podacima 
+| R2 |  | P22 | Neovlašćeno upravljanje podacima 
+| R3 | Alocirani računarski resursi | P31 | Izazivanje nedostupnosti modula
+| R3 |  | P32 | Zloupotreba alociranih resursa
+| R4 | Poslovi i zadaci | P41 | Manipulacija poslovima 
+| R5 | Rezultati | P51 | Manipulacija rezultatima 
+| R6 | Informacije o statusu | P61 | Lažiranje informacija 
+| R7 | Logovi | P71 | Maliciozno čitanje i pisanje 
+| R7 | | P72 | Izazivanje nedostupnosti generisanjem logova 
+| R8 | Meta-podaci | P81 | Otmica čvorova  
 
 _Tebela 2: Prikaz potencijalnih pretnji visokog nivoa u odnosu na kritične resurse_
 
