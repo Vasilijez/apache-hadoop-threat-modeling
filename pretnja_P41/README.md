@@ -42,7 +42,7 @@ __Sesija u terminalu__
 
 U ovom slučaju reč je o manje verovatnom obliku napada, jer je napadač osoba koja je najčešće prethodno ovlašćena za upotrebu servisa. Ipak, bez obzira, dokle god su pristupne tačke ranjive, moguće je izvršiti napad. 
 
-__REST API servis__
+__*REST API* servis__
 
 _YARN_ komponenta je javno dostupna preko _ResourceManager_ čvora. Zbog nedostatka autentifikacije napad je moguć čak i uz omogućenu autorizaciju. Da bi se napad sprečio potrebno je implementirati napredne bezbednosne mehanizme.
 
@@ -546,21 +546,21 @@ _Usled kompleksnosti Kerberos konfiguracije, pojedine komande su apstrakovane._
 Dakle, konfiguracija _Kerberos_ komponente u _Hadoop_ klasteru uključuje instalaciju _Kerberos_ klijenta i servera, kreiranje i podešavanje principala i `.keytab` fajlova, kao i kopiranje potrebnih fajlova na sve čvorove. Pored toga, potrebno je mapirati _Kerberos_ prinicipale na lokalne korisnike, i omogućiti _SPNEGO_ autentifikaciju za _YARN REST API_ servis.
 
 <a id="M4111e"></a>
-### M4111e - Uvođenje gateway čvora
+### M4111e - Uvođenje _gateway_ čvora
 
 ![Nadogradnja Hadoop klastera upotrebom gateway čvora](./Gateway.svg)
 
 _Slika 8: Nadogradnja Hadoop klastera upotrebom gateway čvora_
 
 Ranije je uvedena bezbednosna kontrola [M4111a](#M4111a), kojom se zabranjuje izlazni saobraćaj, što je prilično restriktivno. Potrebno je ciljano dozvoliti izlazni saobraćaj, jer u suprotnom nije moguće obraditi zahteve korisnika. Ova bezbednosna kontrola se uvodi kao dobra praksa, jer je rizično dozvoliti direktan pristup bilo kom čvoru klastera. Kako bi se sprečio direktan pristup čvorovima, potrebno je obezbediti jedan čvor koji će funkcionisati kao _proxy_ server za komunikaciju korisnika sa _Hadoop_ klasterom. Na taj način se sprovodi izolacija klastera, čime se dodatno smanjuje površina za napad.
-Kada je reč o gateway čvoru, mogu se koristiti različiti tipovi čvorova sa ovom ulogom. U praksi se najčešće koriste gateway čvorovi koji u pozadini pokreću _Apache Knox_ komponentu, specijalizovnu za _Hadoop_ klastere. Takođe, mogu se sresti i verzije sa _NGINX_ komponentom, ali je to obično retkost zbog kompleksnosti implementacije.
+Kada je reč o _gateway_ čvoru, mogu se koristiti različiti tipovi čvorova sa ovom ulogom. U praksi se najčešće koriste _gateway_ čvorovi koji u pozadini pokreću _Apache Knox_ komponentu, specijalizovnu za _Hadoop_ klastere. Takođe, mogu se sresti i verzije sa _NGINX_ komponentom, ali je to obično retkost zbog kompleksnosti implementacije.
 
 Ova bezbednosna kontrola se neće detaljno obrađivati. Prethodne bezbednosne kontrole je potrebno minimalno korigovati. Preuzeti sledeće korake implementacije:
 1. Kreirati sve lokalne korisnike.
 2. Instalirati _Hadoop_ klijent.
-3. Dozvoliti izlaznu komunikaciju klastera samo sa gateway čvorom.
-4. Instalirati _Kerberos_ klijenta na gateway čvoru.  
-5. Izvršiti preostalu konfiguraciju gateway čvora, ali i ostalih čvorova kako bi se međusobno prepoznali.
+3. Dozvoliti izlaznu komunikaciju klastera samo sa _gateway_ čvorom.
+4. Instalirati _Kerberos_ klijenta na _gateway_ čvoru.  
+5. Izvršiti preostalu konfiguraciju _gateway_ čvora, ali i ostalih čvorova kako bi se međusobno prepoznali.
 
 Dakle, na svim čvorovima je instaliran _Kerberos_ klijent, dok je na _ResourceManager_ čvoru instaliran _Kerberos_ server. Klaster se nalazi unutar izolovane mreže, dok jedan _gateway_ čvor stoji ispred klastera i omogućava komunikaciju eksternih entiteta sa klasterom.
 
@@ -575,7 +575,7 @@ Postoje tri načina za komunikaciju sa _gateway_ čvorom odnosno klasterom:
 
 Zombi poslovi su svi poslovi koje je teško ili nemoguće terminirati. Osnovna karakteristika zombi poslova je _dugotrajnost_. Moguće je i samo nenamernim lošim postavkama poslova vremenom izazvati kolaps klastera. Napadači mogu biti raznovrsni. Običan radnik može biti nesvestan loše konfiguracije klastera i greškom izazvati zombi posao. Maliciozni napadači mogu biti interni ili eksterni u odnosu na organizaciju, pa samim tim i u odnosu na posmatrani modul. Maliciozni napadači su posebno zainteresovani za izvođenje ovog napada. Kada nedostaju specifične bezbednosne kontrole, napad je vrlo jednostavan i poguban za izvođenje. Velika problematika ovog napada je mogućnost zadavanja raznovrsnih poslova. Činjenica je da je teško analizirati i utvrditi semantiku posla. Prepoznavanje korišćenih komandi je ranije urađeno mitigacijom _[M4111c](#M4111c)_. Kao što je već rečeno, ovakva bezbednosna kontrola pomaže u značajnom broju slučajeva, iako se fokusira samo na komande, ne i na dublju semantiku. Međutim, preterana restriktivnost komandi takođe ograničava mogućnost korišćenja u mnogim slučajevima distribuirane obrade podataka. Bilo kako bilo, poslovi se mogu zamaskirati tako da im se teško razazna prava namera. Ukoliko se poslovi nikada ne završavaju, relativno je lako narušiti bezbednosno svojstvo dostupnosti servisa _(denial of service)_. Stoga, sprovođenjem ovog napada biće realizovana pretnja nedostupnosti _YARN_ komponente. Zanimljivo je da se dostupnost klastera vrlo lako može narušiti, i to ne samo u slučaju distribuiranog napada, već i napadom od strane jedne osobe.
 
-## Beskonačno izvršavanje mapper funkcije
+## Beskonačno izvršavanje _mapper_ funkcije
 
 Ovo bi bio standardan primer napada pokretanjem zombi poslova. Napadač može pokušati sa uspavljivanjem niti. Tada će koristiti _mapper_ funkciju beskonačnog trajanja, pri čemu se _reducer_ funkcija nikada neće pozvati i izvršiti:
 ``` python

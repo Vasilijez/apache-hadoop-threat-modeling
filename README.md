@@ -27,14 +27,14 @@ _Clients_ predstavljaju eksterni entitet i to bi bili korisnici ili aplikacije k
 #### Hijerahija odnosa
 Potrebno je objasniti hijerarhiju odnosa između čvorova. Uvode se pojmovi nadređeni (engl. _master_) i podređeni (engl. _slave_) čvor. 
 Čvor može biti _Docker_ kontejner, virtuelna mašina ili server. Obratiti pažnju, procesni čvor nije uvek isto što i čvor, iako najčešće jeste.
-- U okviru _YARN_ komponente, _ResourceManager_ je nadređeni čvor, pri čemu su _NodeManager-s_ podređeni čvorovi [[3]](#[3]).
-- U okviru _HDFS_ komponente, _NameNode_ je nadređeni čvor, pri čemu su _DataNode-s_ podređeni čvorovi [[4]](#[4]).
+- U okviru _YARN_ komponente, _ResourceManager_ je nadređeni čvor, pri čemu su podređeni čvorovi tipa _NodeManager_ [[3]](#[3]).
+- U okviru _HDFS_ komponente, _NameNode_ je nadređeni čvor, pri čemu su podređeni čvorovi tipa _DataNode_ [[4]](#[4]).
 
 ![Master-slave hijerarhija](./Master_slave_hijerarhija.svg)
 
 _Slika 3: Dijagram master-slave hijerarhije odnosa_
 
-Procesni čvorovi _Scheduler_ i _ApplicationManager_, su posledično nadređeni procesnim čvorovima _ApplicationMaster_, _NodeManager_ i _Container_. Takođe, procesni čvor _NameNode_ je nadređen _DataNode_ procesnim čvorovima.
+Procesni čvorovi _Scheduler_ i _ApplicationManager_, su posledično nadređeni procesnim čvorovima tipa _ApplicationMaster_, _NodeManager_ i _Container_. Takođe, procesni čvor _NameNode_ je nadređen procesnim čvorovima tipa _DataNode_.
 
 Sa aspekta bezbednosti bitno je razumeti ove odnose kako bi se adekvatno definisale granice poverenja.
 
@@ -108,7 +108,7 @@ _Tebela 2: Prikaz potencijalnih pretnji visokog nivoa u odnosu na kritične resu
 Konfiguracioni fajlovi *Hadoop* komponenti su vrlo česta meta napadača.
 
 - `P11:`
-S obzirom da *Hadoop* poseduje puno komponenti, kao i konfiguracionih fajlova, napadači su svesni te činjenice i gledaju da to iskoriste na maliciozni način. Uvid ili mogućnost izmene konfiguracionih fajlova pružaju velike mogućnosti. Ipak, u praksi se najčešće iskoristi situacija sa podrazumevanim i loše definisanim konfiguracinom fajlovima. 
+S obzirom da *Hadoop* poseduje puno komponenti, kao i konfiguracionih fajlova, napadači su svesni te činjenice i gledaju da to iskoriste na maliciozni način. Uvid ili mogućnost izmene konfiguracionih fajlova pružaju velike mogućnosti. Ipak, u praksi se najčešće iskoristi situacija sa podrazumevanim i loše definisanim konfiguracionim fajlovima. 
 
 **`R2`**
 Blokovi podataka su omiljeni kritični resurs za napadače. 
