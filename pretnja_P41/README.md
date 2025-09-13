@@ -325,6 +325,24 @@ Prethodnu skriptu je potrebno pokrenuti na svim _NodeManager_ čvorovima. Savet 
 ![Mitigacija M4111a](./Mitigacija_M4111a.png)
 _Slika 6: Rezultat pokretanja crypto mining posla nakon uvođenja bezbednosne kontrole_
 
+<a id="M4111b"></a>
+### M4111b - Sužavanje mogućnosti kontejnera
+Isključivanje _firewall_ podešavanja je vrlo često prva aktivnost napadača u sklopu složenijeg napada [[20]](#[20]). Za slučaj eventualnog prolaska maliciozne komande eliminisati ključne ranjivosti.
+Preduslov za uvođenje narednih bezbednosnih kontrola predstavlja `LinuxContainerExecutor`, koji je korišćen od strane _YARN_ komponente radi adekvatnog pokretanja kontejnera uz očuvanje zadatih bezbednosnih mehanizama.
+``` xml
+<property>
+  <name>yarn.nodemanager.container-executor.class</name>
+  <value>org.apache.hadoop.yarn.server.nodemanager.LinuxContainerExecutor</value>
+</property>
+```
+Potrebno je isključiti propagaciju privilegija koje ima _yarn_ korisnik na nivou kontejnera u odnosu na čitav _NodeManager_ čvor. Ovo se postiže zahvaljujući vrednosti `NET_ADMIN`, mada potrebno je odbaciti još neke mogućnosti korisnika kontejnera. `SYS_ADMIN` predstavlja naprednu mogućnost upravljanja sistemom, obezbeđujući većinu privilegovanih operacija. `NET_RAW` otvara mogućnost za mnoštvo _MITM_ (_man in the middle_) napada [[21]](#[21]).
+``` xml
+<property>
+  <name>yarn.nodemanager.dropped.capabilities</name>
+  <value>NET_RAW,SYS_ADMIN,NET_ADMIN</value>
+</property>
+```
+
 # Reference
 
 <a id="[1]"></a>
@@ -383,4 +401,10 @@ _Slika 6: Rezultat pokretanja crypto mining posla nakon uvođenja bezbednosne ko
 
 <a id="[19]"></a>
 [19] [Hadoop Security: Protecting your big data platform - Common Hadoop service ports](https://www.oreilly.com/library/view/hadoop-security/9781491900970/) _(Autor: Ben Spivey, Joey Echeverria, Izdato: _01. jula, 2015_)_
+
+<a id="[20]"></a>
+[20] [Hackers Exploit Misconfigured YARN, Docker, Confluence, Redis Servers for Crypto Mining](https://thehackernews.com/2024/03/hackers-exploit-misconfigured-yarn.html) _(Autor: Ravie Lakshmanan, Pristupano: _7. avgusta, 2025_)_
+
+<a id="[21]"></a>
+[21] [What does CAP_NET_RAW do?](https://unix.stackexchange.com/questions/447886/what-does-cap-net-raw-do) _(Autor: Vlastimil Burián, Pristupano: _10. avgusta, 2025_)_
 
