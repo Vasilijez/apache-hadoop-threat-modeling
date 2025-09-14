@@ -91,7 +91,7 @@ To su ključni razlozi zašto _YARN_ pristupne tačke, pre svega javno dostupne,
 
 __Zanimljivosti__
 
-Ako se razmatra napad na javno dostupne pristupne tačke, sa pretpostavljenim [klasterom](referentna_arhitektura), onda se mogu pronaći sledeće zanimljivosti. Poznato je da je u pitanju najzastupljenija klasa napada u _Hadoop_ klasterima, pri čemu se svakog momenta izvrši 300 000 pokušaja realizacije. Svi javno dostupni _Hadoop_ klasteri bivaju aktivno traženi od strane specijalizovanih pretraživača kao što su _Shodan_ ili _Fofa_ [[6]](#[6]). Pitanje je vremena kada će biti pronađeni i napadnuti.
+Ako se razmatra napad na javno dostupne pristupne tačke, sa pretpostavljenim [klasterom](#referentna_arhitektura), onda se mogu pronaći sledeće zanimljivosti. Poznato je da je u pitanju najzastupljenija klasa napada u _Hadoop_ klasterima, pri čemu se svakog momenta izvrši 300 000 pokušaja realizacije. Svi javno dostupni _Hadoop_ klasteri bivaju aktivno traženi od strane specijalizovanih pretraživača kao što su _Shodan_ ili _Fofa_ [[6]](#[6]). Pitanje je vremena kada će biti pronađeni i napadnuti.
 
 Kao što se može primetiti pregledom stabla napada na [slici 2](#slika_2), realizacijom ovog napada ostvaruje se događaj pokretanje maliciozne aplikacije. Cilj napadača će biti predodređen tipom maliciozne aplikacije. U praksi se najčešće sreću _botnet_, _crypto mining_ i _ransomware_ aplikacije, pri čemu gotovo uvek dolazi i do krađe podataka [[9]](#[9]). Da bi opis ove klase napada bio zanimljiviji i realističniji, fokus će biti na pokretanju _crypto mining_ aplikacije. Uz napomenu da je krađa podataka daleko najozbiljnija pretnja po jedan _Hadoop_ klaster, a osnovni cilj napadača često se širi, obuhvatajući sve kritične resurse i servise kojima ima pristup, uz mogućnost pivotiranja [[10]](#[10])[[11]](#[11]). Pokretanje malicioznih aplikacija je kritična pretnja kojom se u zavisnosti od tipa aplikacije može narušiti bilo koje bezbednosno svojstvo resursa ili servisa. Rizik za realizacijom ove pretnje je kritičan s obzirom na visok negativan uticaj pretnje i visoku verovatnoću izvršavanja.
 
@@ -849,7 +849,7 @@ Najbolje rešenje jeste definisanje bezbednosne kontrole pomoću koje se korisni
 setquota -u user 524288 524288 0 0 /users/user
 ```
 __Napomene:__ 
-- Analiza se uzima pod pretpostavkom uvođenja prethodne mitigacije [M4111d](M4111d). U suprotnom bi svaki kontejner bio podignut pod _root_ ili _yarn_ korisnikom.
+- Analiza se uzima pod pretpostavkom uvođenja prethodne mitigacije [M4111d](#M4111d). U suprotnom bi svaki kontejner bio podignut pod _root_ ili _yarn_ korisnikom.
 - Iako je ovde u prvi plan istaknut _NodeManager_ čvor, potrebno je na svim čvorovima postaviti kvotu zauzeća memorijskog prostora, bez obzira da li korisnik može ili ne može direktno pristupiti fajl sistemu. Jednostavan primer za direktan pristup fajl sistemu je situacija u kojoj je korisnik prijavljen na _Gateway_ čvor.
 
 ## Neograničeno upisivanje podataka u fajl sistemu _Hadoop_ modula
