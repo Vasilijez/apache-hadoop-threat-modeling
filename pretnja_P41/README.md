@@ -21,13 +21,13 @@ Par napomena koje su uvedene radi preglednosti dijagrama:
 * Keberos kao bezbednosna kontrola se praktično kod svih napada preporučuje, pa je izostavljena. Smatra se da automatski podrazumeva i autorizaciju, ne samo autentifikaciju.
 * Trivijalne bezbednosne kontrole, poput ažuriranja verzija zavisnosti, se podrazumevaju. 
 
-| IDP | Pretnja niskog nivoa | STRIDE tip
+| IDP | Pretnja niskog nivoa | _STRIDE_ tip
 | ----- | --- | --- | 
-| P411 | Pokretanje _malware_ poslova | Tampering
-| P412 | Nedostupnost _YARN_ komponente | Denial of service
-| P413 | Prisluškivanje poslova | Information disclosure
-| P414 | Sabotaža i krađa tuđih poslova | Tampering, Spoofing
-| P415 | Preuzimanje kontrole klastera | Denial of service, Elevation of privilege
+| P411 | Pokretanje _malware_ poslova | _Tampering_
+| P412 | Nedostupnost _YARN_ komponente | _Denial of service_
+| P413 | Prisluškivanje poslova | _Information disclosure_
+| P414 | Sabotaža i krađa tuđih poslova | _Tampering, Spoofing_
+| P415 | Preuzimanje kontrole klastera | _Denial of service, Elevation of privilege_
 
 _Tabela 1: Prikaz potencijalnih pretnji niskog nivoa u odnosu na STRIDE tip_
 
@@ -357,7 +357,7 @@ Potrebno je isključiti propagaciju privilegija koje ima _yarn_ korisnik na nivo
  
 Moguće je dublje istražiti vrste komandi koje se koriste od strane napadača, pa ih naknadno dodati čime bi se ostvario veći nivo zaštite. Trenutno su dodate najpoznatije koje se očekuju. Ova bezbednosna kontrola se dodaje kao vid dobre prakse kako bi se ojačala postojeća zaštita. Razlog leži u činjenici postojanja minimalne šansa za pokretanjem neke kreativne maliciozne komande, koja bi uspela da zaobiđe ili onemogući postojeće bezbednosne kontrole. Na primer, maliciozno kontaktiranje internih servisa. Primenom ove bezbednosne kontrole je vrlo otežana penetracija malicioznih komandi, a čak i ukoliko prođu, izuzetno su male šanse da ih druga bezbenosna kontrola neće detektovati. Moguće je primeniti i obrnutu logiku, pa samo kreirati _whitelist_ dozvoljenih komandi što bi bilo efikasnije. Značajno je dobro poznavanje slučajeva korišćenja i komandi koje se pokreću regularno od strane korisnika, kako korisnici ne bi bili nepravedno limitirani pri pokretanju aplikacija.
 
-Potrebno je presretati komande prosleđene putem javno dostupnih _YARN REST API_ servisa ili direktno korišćenjem terminal sesije. Aktiviranjem mitigacije _[M4111b](#M4111b)_ se pruža mogućnost za jednostavno i centralizovano presretanje komandi koje predstavljaju zahtev za pokretanje kontejnera. 
+Potrebno je presretati komande prosleđene putem javno dostupnih _YARN REST API_ servisa ili direktno korišćenjem terminal sesije. Aktiviranjem mitigacije [M4111b](#M4111b) se pruža mogućnost za jednostavno i centralizovano presretanje komandi koje predstavljaju zahtev za pokretanje kontejnera. 
 
 Unutar svakog _NodeManager_ čvora potrebno je izmeniti `container-executor.cfg` fajl, tako što bi se dodala sledeća linija. Reč je o putanji do `interceptor` skripte. 
 ``` sh
@@ -434,7 +434,7 @@ Servis poseduje samo svoju heš vrednost. Klijent formira novu poruku ka servisu
 
 #### Konfiguracija _Kerberos_ komponente
 
-Instalirati _Kerberos_ klijent na svim čvorovima [[24]](#[24])[[25]](#[25])
+Instalirati _Kerberos_ klijent na svim čvorovima [[24]](#[24])[[25]](#[25]).
 ``` sh 
 yum install krb5-workstation krb5-libs
 ```
@@ -582,7 +582,7 @@ Postoje tri načina za komunikaciju sa _gateway_ čvorom odnosno klasterom:
 <a id="A4121"></a>
 # A4121. Zombi poslovi
 
-Zombi poslovi su svi poslovi koje je teško ili nemoguće terminirati. Osnovna karakteristika zombi poslova je _dugotrajnost_. Moguće je i samo nenamernim lošim postavkama poslova vremenom izazvati kolaps klastera. Napadači mogu biti raznovrsni. Običan radnik može biti nesvestan loše konfiguracije klastera i greškom izazvati zombi posao. Maliciozni napadači mogu biti interni ili eksterni u odnosu na organizaciju, pa samim tim i u odnosu na posmatrani modul. Maliciozni napadači su posebno zainteresovani za izvođenje ovog napada. Kada nedostaju specifične bezbednosne kontrole, napad je vrlo jednostavan i poguban za izvođenje. Velika problematika ovog napada je mogućnost zadavanja raznovrsnih poslova. Činjenica je da je teško analizirati i utvrditi semantiku posla. Prepoznavanje korišćenih komandi je ranije urađeno mitigacijom _[M4111c](#M4111c)_. Kao što je već rečeno, ovakva bezbednosna kontrola pomaže u značajnom broju slučajeva, iako se fokusira samo na komande, ne i na dublju semantiku. Međutim, preterana restriktivnost komandi takođe ograničava mogućnost korišćenja u mnogim slučajevima distribuirane obrade podataka. Bilo kako bilo, poslovi se mogu zamaskirati tako da im se teško razazna prava namera. Ukoliko se poslovi nikada ne završavaju, relativno je lako narušiti bezbednosno svojstvo dostupnosti servisa _(denial of service)_. Stoga, sprovođenjem ovog napada biće realizovana pretnja nedostupnosti _YARN_ komponente. Zanimljivo je da se dostupnost klastera vrlo lako može narušiti, i to ne samo u slučaju distribuiranog napada, već i napadom od strane jedne osobe.
+Zombi poslovi su svi poslovi koje je teško ili nemoguće terminirati. Osnovna karakteristika zombi poslova je _dugotrajnost_. Moguće je i samo nenamernim lošim postavkama poslova vremenom izazvati kolaps klastera. Napadači mogu biti raznovrsni. Običan radnik može biti nesvestan loše konfiguracije klastera i greškom izazvati zombi posao. Maliciozni napadači mogu biti interni ili eksterni u odnosu na organizaciju, pa samim tim i u odnosu na posmatrani modul. Maliciozni napadači su posebno zainteresovani za izvođenje ovog napada. Kada nedostaju specifične bezbednosne kontrole, napad je vrlo jednostavan i poguban za izvođenje. Velika problematika ovog napada je mogućnost zadavanja raznovrsnih poslova. Činjenica je da je teško analizirati i utvrditi semantiku posla. Prepoznavanje korišćenih komandi je ranije urađeno mitigacijom [M4111c](#M4111c). Kao što je već rečeno, ovakva bezbednosna kontrola pomaže u značajnom broju slučajeva, iako se fokusira samo na komande, ne i na dublju semantiku. Međutim, preterana restriktivnost komandi takođe ograničava mogućnost korišćenja u mnogim slučajevima distribuirane obrade podataka. Bilo kako bilo, poslovi se mogu zamaskirati tako da im se teško razazna prava namera. Ukoliko se poslovi nikada ne završavaju, relativno je lako narušiti bezbednosno svojstvo dostupnosti servisa _(denial of service)_. Stoga, sprovođenjem ovog napada biće realizovana pretnja nedostupnosti _YARN_ komponente. Zanimljivo je da se dostupnost klastera vrlo lako može narušiti, i to ne samo u slučaju distribuiranog napada, već i napadom od strane jedne osobe.
 
 ## Beskonačno izvršavanje _mapper_ funkcije
 
@@ -688,7 +688,7 @@ banned.users=alice
 <a id="A4122"></a>
 # A4122. Zasipanje poslovima
 
-Zasipanje poslova predstavlja situaciju gde napadač kreira veću količinu poslova (spamuje). Ova klasa napada je slična sa prethodnom (_[A4121](#A4121)_), zbog toga se zajednički delovi analize neće ponavljati. Ova klasa napada može biti uzrokovana i samo pohlepnošću radnika za resursima, a ne nužno malicioznošću. Ako se posmatraju napadi, fokus je na ugrožavanju bezbednosnog svojstva dostupnosti servisa. Ako se posmatraju bezbednosne kontrole, fokus je na uvođenju kvota.  Motiv za analizom ovakve klase napada je visoka verovatnoća realizacije, bez obzira što je negativan uticaj ocenjen kao srednje umeren. Relativno se lako izvodi, vrlo je intuitivna, i stoga se često sreće u praksi. Prema procenjenom riziku obavezno joj se treba posvetiti. Biće ilustrovano više varijacija napada kako bi se jasno ilustrovale ideje napadača. Primetno je da se bezbednosne kontrole, kao odgovor na pretnje, očekivano preklapaju kako istraživanje napreduje. 
+Zasipanje poslova predstavlja situaciju gde napadač kreira veću količinu poslova (spamuje). Ova klasa napada je slična sa prethodnom [A4121](#A4121), zbog toga se zajednički delovi analize neće ponavljati. Ova klasa napada može biti uzrokovana i samo pohlepnošću radnika za resursima, a ne nužno malicioznošću. Ako se posmatraju napadi, fokus je na ugrožavanju bezbednosnog svojstva dostupnosti servisa. Ako se posmatraju bezbednosne kontrole, fokus je na uvođenju kvota.  Motiv za analizom ovakve klase napada je visoka verovatnoća realizacije, bez obzira što je negativan uticaj ocenjen kao srednje umeren. Relativno se lako izvodi, vrlo je intuitivna, i stoga se često sreće u praksi. Prema procenjenom riziku obavezno joj se treba posvetiti. Biće ilustrovano više varijacija napada kako bi se jasno ilustrovale ideje napadača. Primetno je da se bezbednosne kontrole, kao odgovor na pretnje, očekivano preklapaju kako istraživanje napreduje. 
 
 Ključne karakteristike ove klase napada su:
 - Maliciozno korišćenje (alociranje) resursa.
@@ -730,7 +730,7 @@ Potrebno je ograničiti broj jezgara centralnog procesora po poslu.
   <value>2</value> 
 </property>
 ```
-Kod ovog napada dolaze u obzir mitigacije koje su i ranije uvedene, poput _[M4121a](#M4121a)_ i _[M4121b](#M4121b)_. Zahtevi koji krše globalno postavljene kvote će biti odbijeni. Moguće je postaviti i personalizovane kvote prema korisniku, što može biti korisno. 
+Kod ovog napada dolaze u obzir mitigacije koje su i ranije uvedene, poput [M4121a](#M4121a) i [M4121b](#M4121b). Zahtevi koji krše globalno postavljene kvote će biti odbijeni. Moguće je postaviti i personalizovane kvote prema korisniku, što može biti korisno. 
 
 <a id="M4122c"></a>
 ### M4122c - Ograničavanje resurskog udela
