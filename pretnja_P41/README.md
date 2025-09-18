@@ -1,6 +1,6 @@
 <a id="referentna_arhitektura"></a>
 # Referentna arhitektura
-Ovo je referentni nezaštićeni _Hadoop_ klaster koji je postavljen od strane osobe sa osnovnim znanjima po pitanju bezbednosti. Dijagram se dirketno oslanja na prethodno razrađene dijagrame tokova podataka, s tim da je ovde fokus na čvorovima klastera. Potrebno je uvesti određenu referentnu arhitekturu kako bi se na lakši način ispratile analize, napadi i mitigacije u odnosu na posmatrane pretnje. Konkretan čvor može predstavljati zaseban server, pri čemu svi čvorovi klastera međusobno komuniciraju. Pretpostavka je da su svi čvorovi pokrenuti na operativnom sistemom _Linux_ distribucije , jer se zbog prilagođenosti i podrške takav izbor dominantno sreće u praksi [[2]](#[2]). Kod nezaštićenog klastera korisnik može komunicirati sa svim čvorovima, bilo kroz nezaštićene javne servise ili direktno putem terminal sesije odnosno _SSH_ sesije u kombinaciji sa _Hadoop_ klijent interfejsom. S obzirom da je reč o distribuiranom sistemu, konfiguracije kao i korisnici su redudantno prisutni na svim čvorovima. [[3]](#[3]) Od korisnika, za sada, je potrebno istaći _hdfs_ i _yarn_ koji su ekvivalent _root_ korisniku u _Hadoop_ modulu.
+Ovo je referentni nezaštićeni _Hadoop_ klaster koji je postavljen od strane osobe sa osnovnim znanjima po pitanju bezbednosti. Dijagram se dirketno oslanja na prethodno razrađene dijagrame tokova podataka, s tim da je ovde fokus na čvorovima klastera. Potrebno je uvesti određenu referentnu arhitekturu kako bi se na lakši način ispratile analize, napadi i mitigacije u odnosu na posmatrane pretnje. Konkretan čvor može predstavljati zaseban server, pri čemu svi čvorovi klastera međusobno komuniciraju. Pretpostavka je da su svi čvorovi pokrenuti na operativnom sistemom _Linux_ distribucije , jer se zbog prilagođenosti i podrške takav izbor dominantno sreće u praksi [[2]](#[2]). Kod nezaštićenog klastera korisnik može komunicirati sa svim čvorovima, bilo kroz nezaštićene javne servise ili direktno putem terminal sesije odnosno _SSH_ sesije u kombinaciji sa _Hadoop_ klijent interfejsom. S obzirom da je reč o distribuiranom sistemu, konfiguracije kao i korisnici su redudantno prisutni na svim čvorovima [[3]](#[3]). Od korisnika, za sada, je potrebno istaći _hdfs_ i _yarn_ koji su ekvivalent _root_ korisniku u _Hadoop_ modulu.
 
 ![Referentna arhitektura](./Referentna_arhitektura.svg)
 
@@ -18,7 +18,7 @@ _Slika 2: Stablo napada razvijeno u odnosu na pretnju visokog nivoa Manipulacija
 
 Par napomena koje su uvedene radi preglednosti dijagrama:
 * Pretnje su povezane samo sa bezbednosnim kontrolama koje predstavljaju dovoljan uslov za njihovu efikasnu zaštitu.
-* Keberos kao bezbednosna kontrola se praktično kod svih napada preporučuje, pa je izostavljena. Smatra se da automatski podrazumeva i autorizaciju, ne samo autentifikaciju.
+* _Kerberos_ kao bezbednosna kontrola se praktično kod svih napada preporučuje, pa je izostavljena. Smatra se da automatski podrazumeva i autorizaciju, ne samo autentifikaciju.
 * Trivijalne bezbednosne kontrole, poput ažuriranja verzija zavisnosti, se podrazumevaju. 
 
 | IDP | Pretnja niskog nivoa | _STRIDE_ tip
@@ -49,7 +49,7 @@ Reč je o istoj klasi napada, bez obzira na tip pristupne tačke. Zastupljenost 
 
 __Sesija u terminalu__
 
-U ovom slučaju reč je o manje verovatnom obliku napada, jer je napadač osoba koja je najčešće prethodno ovlašćena za upotrebu servisa. Ipak, bez obzira, dokle god su pristupne tačke ranjive, moguće je izvršiti napad. 
+U ovom slučaju reč je o manje verovatnom obliku napada, jer je napadač osoba koja je najčešće prethodno ovlašćena za upotrebu servisa. Bez obzira, dokle god su pristupne tačke ranjive, moguće je izvršiti napad. 
 
 __*REST API* servis__
 
@@ -83,7 +83,7 @@ Sledeći faktori sinergetski utiču na pojavu ovog napada:
 - Aplikacije (kontejneri) se pokreću od strane _yarn_ korisnika.
 - Dopušten izlazni saobraćaj prema bilo kome.
 - Praktično direktno obraćanje čvorovima.
-- Angažovanje nestručnog osoblja (junior administrator).
+- Angažovanje nestručnog osoblja (junior administratori).
 - Nije potrebno naročito tehničko znanje (mnoštvo napadača).
 - Velika površina za napad.
 
@@ -180,7 +180,7 @@ public class Mapper extends Mapper<LongWritable, Text, Text, IntWritable> {
   }
 }
 ```
-U kasnijim primerima će biti prikazane komande kojima se pokreću poslovi na različite načine.
+U kasnijim primerima će biti prikazane komande sa kojima se pokreću poslovi na različite načine.
 
 ### _Reverse shell_ aplikacija
 
@@ -238,7 +238,7 @@ whoami # yarn
 
 _Slika 5: Rezultat pokretanja reverse shell posla_
 
-Kao što je navedeno pri analizi, često sledi dalja eskalacija napada u vidu sabotaže _firewall_ postavki, ispitivanje komponenti sistema radi mogućeg širenja (pivotiranje).
+Kao što je navedeno pri analizi, često sledi dalja eskalacija napada u vidu sabotaže _firewall_ postavki kao i ispitivanja komponenti sistema radi mogućeg širenja - pivotiranje.
 Iz pozicije _yarn_ korisnika u _ApplicationMaster_ kontejneru, vrlo je lako dobiti pristup svim blokovima podataka. Takođe je moguće pokrenuti i bilo kakvu aplikaciju uz neograničene resurse. Radi demonstracije opisanog slede dva mini primera eskalacije.
 
 __Čitanje blokova podataka__
@@ -269,8 +269,8 @@ Površina za napad će se značajno smanjiti ako se uvede bezbednosni mehanizam 
 Plan je postaviti više bezbednosnih kontrola, kako bi bezbednosna svojstva resursa ili servisa bila apsolutno očuvana. To će biti urađeno na sledeći način:
 1. Zabranom bilo kakve komunikacije izvan kontejnera, osim ako to nisu druge komponente _Hadoop_ klastera [[17]](#[17]).
 2. Zabranom mapiranja privilegija _yarn_ korisnika između _NodeManager_ čvora i kontejnera, uz eliminaciju ključnih ranjivosti. Ovaj pristup je neophodan kako napadač ne bi isključio prethodno uspostvljena _firewall_ podešavanja.
-3. Uspostavljanjem pravila za proveru tipa aplikacije. Potrebno je zabraniti sve aplikacije koje žele da pokrenu _shell_ sesiju. Prve dve bezbednosne kontrole su dovoljne, ali kako bi se sistem dodatno zaštitio trebalo bi postaviti i ovu kontrolu. Za veliku većinu _Hadoop_ klastera nije normalno ponašanje pokretanje _shell_ sesije na _ApplicationMaster_ kontejneru.
-4. Postavljanjem jake autentifikacije i autorizacije. Kerberos.
+3. Uspostavljanjem pravila za proveru tipa aplikacije. Potrebno je zabraniti sve aplikacije koje su malicioznog karaktera. Prve dve bezbednosne kontrole su dovoljne, ali kako bi se sistem dodatno zaštitio trebalo bi postaviti i ovu kontrolu. Za veliku većinu _Hadoop_ klastera nije normalno ponašanje pokretanje _reverse shell_ sesije ili kripto majnera na _ApplicationMaster_ kontejneru.
+4. Postavljanjem jake autentifikacije i autorizacije. _Kerberos_.
 5. Sprečavanjem direktnog pristupa čvorovima uvođenjem _gateway_ čvora. Preveliki je rizik dozvoliti bilo kom korisniku da se obraća bilo kom čvoru klastera.
 
 <a id="M4111a"></a>
@@ -561,7 +561,7 @@ Dakle, konfiguracija _Kerberos_ komponente u _Hadoop_ klasteru uključuje instal
 
 _Slika 8: Nadogradnja Hadoop klastera upotrebom gateway čvora_
 
-Ranije je uvedena bezbednosna kontrola [M4111a](#M4111a), kojom se zabranjuje izlazni saobraćaj, što je prilično restriktivno. Potrebno je ciljano dozvoliti izlazni saobraćaj, jer u suprotnom nije moguće obraditi zahteve korisnika. Ova bezbednosna kontrola se uvodi kao dobra praksa, jer je rizično dozvoliti direktan pristup bilo kom čvoru klastera. Kako bi se sprečio direktan pristup čvorovima, potrebno je obezbediti jedan čvor koji će funkcionisati kao _proxy_ server za komunikaciju korisnika sa _Hadoop_ klasterom. Na taj način se sprovodi izolacija klastera, čime se dodatno smanjuje površina za napad.
+Ova bezbednosna kontrola se uvodi kao dobra praksa, jer je rizično dozvoliti direktan pristup bilo kom čvoru klastera. Kako bi se sprečio direktan pristup čvorovima, potrebno je obezbediti jedan čvor koji će funkcionisati kao _reverse proxy_ server za komunikaciju korisnika sa _Hadoop_ klasterom. Na taj način se sprovodi izolacija klastera, čime se dodatno smanjuje površina za napad.
 Kada je reč o _gateway_ čvoru, mogu se koristiti različiti tipovi čvorova sa ovom ulogom. U praksi se najčešće koriste _gateway_ čvorovi koji u pozadini pokreću _Apache Knox_ komponentu, specijalizovnu za _Hadoop_ klastere. Takođe, mogu se sresti i verzije sa _NGINX_ komponentom, ali je to obično retkost zbog kompleksnosti implementacije.
 
 Ova bezbednosna kontrola se neće detaljno obrađivati. Prethodne bezbednosne kontrole je potrebno minimalno korigovati. Preuzeti sledeće korake implementacije:
@@ -582,11 +582,11 @@ Postoje tri načina za komunikaciju sa _gateway_ čvorom odnosno klasterom:
 <a id="A4121"></a>
 # A4121. Zombi poslovi
 
-Zombi poslovi su svi poslovi koje je teško ili nemoguće terminirati. Osnovna karakteristika zombi poslova je _dugotrajnost_. Moguće je i samo nenamernim lošim postavkama poslova vremenom izazvati kolaps klastera. Napadači mogu biti raznovrsni. Običan radnik može biti nesvestan loše konfiguracije klastera i greškom izazvati zombi posao. Maliciozni napadači mogu biti interni ili eksterni u odnosu na organizaciju, pa samim tim i u odnosu na posmatrani modul. Maliciozni napadači su posebno zainteresovani za izvođenje ovog napada. Kada nedostaju specifične bezbednosne kontrole, napad je vrlo jednostavan i poguban za izvođenje. Velika problematika ovog napada je mogućnost zadavanja raznovrsnih poslova. Činjenica je da je teško analizirati i utvrditi semantiku posla. Prepoznavanje korišćenih komandi je ranije urađeno mitigacijom [M4111c](#M4111c). Kao što je već rečeno, ovakva bezbednosna kontrola pomaže u značajnom broju slučajeva, iako se fokusira samo na komande, ne i na dublju semantiku. Međutim, preterana restriktivnost komandi takođe ograničava mogućnost korišćenja u mnogim slučajevima distribuirane obrade podataka. Bilo kako bilo, poslovi se mogu zamaskirati tako da im se teško razazna prava namera. Ukoliko se poslovi nikada ne završavaju, relativno je lako narušiti bezbednosno svojstvo dostupnosti servisa _(denial of service)_. Stoga, sprovođenjem ovog napada biće realizovana pretnja nedostupnosti _YARN_ komponente. Zanimljivo je da se dostupnost klastera vrlo lako može narušiti, i to ne samo u slučaju distribuiranog napada, već i napadom od strane jedne osobe.
+Zombi poslovi su svi poslovi koje je teško ili nemoguće terminirati. Osnovna karakteristika zombi poslova je _dugotrajnost_. Moguće je i samo nenamernim lošim postavkama poslova vremenom izazvati kolaps klastera. Napadači mogu biti raznovrsni. Običan radnik može biti nesvestan loše konfiguracije klastera i greškom izazvati zombi posao. Maliciozni napadači mogu biti interni ili eksterni u odnosu na organizaciju, pa samim tim i u odnosu na posmatrani modul. Maliciozni napadači su posebno zainteresovani za izvođenje ovog napada. Kada nedostaju specifične bezbednosne kontrole, napad je vrlo jednostavan i poguban za izvođenje. Velika problematika ovog napada je mogućnost zadavanja raznovrsnih poslova. Činjenica je da je teško analizirati i utvrditi semantiku posla. Prepoznavanje korišćenih komandi je ranije urađeno mitigacijom [M4111c](#M4111c). Kao što je već rečeno, ovakva bezbednosna kontrola pomaže u značajnom broju slučajeva, iako se fokusira samo na komande, ne i na dublju semantiku. Međutim, preterana restriktivnost komandi takođe ograničava mogućnost korišćenja u mnogim slučajevima distribuirane obrade podataka. Bilo kako bilo, poslovi se mogu zamaskirati tako da im se teško razazna prava namera. Ukoliko se poslovi nikada ne završavaju, relativno je lako narušiti bezbednosno svojstvo dostupnosti servisa. Stoga, sprovođenjem ovog napada biće realizovana pretnja nedostupnosti _YARN_ komponente _(denial of service)_. Zanimljivo je da se dostupnost klastera vrlo lako može narušiti, i to ne samo u slučaju distribuiranog napada, već i napadom od strane jedne osobe.
 
 ## Beskonačno izvršavanje _mapper_ funkcije
 
-Ovo bi bio standardan primer napada pokretanjem zombi poslova. Napadač može pokušati sa uspavljivanjem niti. Tada će koristiti _mapper_ funkciju beskonačnog trajanja, pri čemu se _reducer_ funkcija nikada neće pozvati i izvršiti:
+Sledi standardan primer napada pokretanjem zombi poslova. Ako napadač izvrši uspavljivanje niti uz korišćenje _mapper_ funkcije beskonačnog trajanja, tada se _reducer_ funkcija nikada neće pozvati i izvršiti:
 ``` python
 def mapper:
     while True:
@@ -604,7 +604,7 @@ mapred streaming      \
 
 <a id="M4121a"></a>
 ### M4121a - Terminisanje neaktivnog posla
-Otkazivanje posla koji ne proizvodi napredak. Dakle, ako posao ne čita iz ulazne datoteke, ne upisuje u izlazne datoteke ili generalno ne napreduje, biće prekinut nakon određenog vremena.
+Otkazivanje posla koji ne proizvodi napredak. Ako posao ne čita iz ulazne datoteke, ne upisuje u izlazne datoteke ili generalno ne napreduje, biće prekinut nakon određenog vremena.
 ``` xml
 <property>
   <name>mapreduce.task.timeout</name>
@@ -829,7 +829,7 @@ public class JobConfigurationByClientApp {
   }
 }
 ```
-Do sada uvedene bezbednosne kontrole odgovaraju i za ovu varijaciju klase napada, s tim da se treba obratiti pažnja na to pod kojim korisnikom se izvršava aplikacija. Ukoliko je neki generički korisnik, kao što je to obično _yarn_, onda aplikacija ima izuzetna ovlašćenja. Ne sme se previše verovati aplikaciji koja koristi _Hadoop_ klaster, jer je u pitanju eksterni entitet. Uvesti specifičnog korisnika, kao i svakog drugog korisnika koji nije aplikacija, uz prethodno definisane kvote.
+Do sada uvedene bezbednosne kontrole odgovaraju i za ovu varijaciju klase napada, s tim da se treba obratiti pažnja na to pod kojim korisnikom se izvršava aplikacija. Ukoliko je neki generički korisnik, kao što je to obično _yarn_, onda aplikacija ima izuzetna ovlašćenja. Ne sme se previše verovati aplikaciji koja koristi _Hadoop_ klaster, jer je u pitanju eksterni entitet. Potrebno je uvesti specifičnog korisnika, kao i svakog drugog korisnika koji nije aplikacija, uz prethodno definisane kvote.
 
 ## Neograničeno upisivanje podataka u lokalnom fajl sistemu
 
@@ -930,7 +930,7 @@ yarn jar "$@"
 ```
 
 # Zaključak
-Uvođenjem predloženih bezbednosnih kontrola će se velika većina pretnji, kako za _YARN_ komponentu tako i za čitav _Hadoop_ klaster, otkloniti. Mnoge od ovih bezbednosnih kontrola su trivijalne, "jeftino" se mogu uvesti i pružaju dobru osnovu za bilo koji _Hadoop_ klaster.
+Uvođenjem predloženih bezbednosnih kontrola će se velika većina pretnji, kako za _YARN_ komponentu, tako i za čitav _Hadoop_ klaster, otkloniti. Mnoge od ovih bezbednosnih kontrola su trivijalne, "jeftino" se mogu uvesti i pružaju dobru osnovu za bilo koji _Hadoop_ klaster.
 
 
 # Reference
