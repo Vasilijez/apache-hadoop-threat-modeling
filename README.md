@@ -108,7 +108,7 @@ _Tebela 2: Prikaz potencijalnih pretnji visokog nivoa u odnosu na kritične resu
 Konfiguracioni fajlovi *Hadoop* komponenti su vrlo česta meta napadača.
 
 - `P11:`
-S obzirom da *Hadoop* poseduje puno komponenti, kao i konfiguracionih fajlova, napadači su svesni te činjenice i gledaju da to iskoriste na maliciozni način. Uvid ili mogućnost izmene konfiguracionih fajlova pružaju velike mogućnosti. Ipak, u praksi se najčešće iskoristi situacija sa podrazumevanim i loše definisanim konfiguracionim fajlovima. 
+S obzirom da *Hadoop* poseduje puno komponenti, kao i konfiguracionih fajlova, napadači su svesni te činjenice i gledaju da to iskoriste na maliciozni način. Uvid ili mogućnost izmene konfiguracionih fajlova pružaju velike mogućnosti. U praksi se najčešće iskoristi situacija sa podrazumevanim i loše definisanim konfiguracionim fajlovima. 
 
 **`R2`**
 Blokovi podataka su omiljeni kritični resurs za napadače. 
