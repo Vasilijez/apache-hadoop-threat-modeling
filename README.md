@@ -162,7 +162,7 @@ Meta-podaci su neophodni podaci za adekvatno upravljanje podređenim čvorovima.
 
 U nastavku slede razrađena stabla napada, analize odabranih napada kao i predložene mitigacije za dve pretnje visokog nivoa:
 1. [Direktorijum pretnje `P41`](https://github.com/Vasilijez/apache-hadoop-threat-modeling/tree/vasilije/pretnja_P41)
-2. [Direktorijum...](https://github.com/Vasilijez/apache-hadoop-threat-modeling/tree/main/model)
+2. [Direktorijum pretnje `P21`](https://github.com/Vasilijez/apache-hadoop-threat-modeling/tree/milica/pretnja_P21)
 
 ## Reference
 
