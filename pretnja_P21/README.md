@@ -1,12 +1,12 @@
 # Korišćeni _Hadoop_ klaster
 
-Za analizu napada iskorišćen je nezaštićen _Hadoop_ klaster [[2]](#[2]). Sa bezbedonosnog aspekta, klaster ima samo osnovne elemente. U praksi se najčešće koristi operativni sistem _Linux_ za pokretanje čvorova [[3]](#[3]). Kada je klaster nezaštićen, korisnik može da komunicira sa bilo kojim čvorom, putem nezaštićenih javih servisa ili putem terminal sesije direktno pomoću _SSH_ i _Hadoop_ klijent interfejsom. Arhitektura na visokom nivou apstrakcije je data na slici 1. Kod distribuiranih sistema su konfiguracije i korisnici redudantno prisutni na svim čvorovima [[4]](#[4]). U ovom delu najveći fokus je stavljen na _DataNode_-ove HDFS komponente.
+Za analizu napada iskorišćen je nezaštićen _Hadoop_ klaster [[2]](#[2]). Sa bezbedonosnog aspekta, klaster ima samo osnovne elemente. U praksi se najčešće koristi operativni sistem _Linux_ za pokretanje čvorova [[3]](#[3]). Kada je klaster nezaštićen, korisnik može da komunicira sa bilo kojim čvorom, putem nezaštićenih javnih servisa ili putem terminal sesije direktno pomoću _SSH_ i _Hadoop_ klijent interfejsom. Arhitektura na visokom nivou apstrakcije je data na slici 1. Kod distribuiranih sistema su konfiguracije i korisnici redudantno prisutni na svim čvorovima [[4]](#[4]). U ovom delu najveći fokus je stavljen na _DataNode_-ove HDFS komponente.
 
 ![Apstrakovana arhitektura komunikacije sa _Hadoop_ klasterom](./Arhitektura.png)
 
 _Slika 1: Apstrakovana arhitektura komunikacije sa Hadoop klasterom_
 
-_Hadoop_ klaster korišćen u ovom delu nema implementirane napredne bezbedosnosne mehanizme. Standardno definisane kontrole pristupa _Hadoop_ klasteru podrazumevaju da korisnik ili dobija potpun pristup klasteru ili ga nema uopšte [[5]](#[5]). Na taj način, kontrola pristupa je svedena na nivo čvora koji učestvuje u klasteru. Ovakav pristup je čest u praksi jer se klastiri podižu u "bezbednim okruženjima" [[6]](#[6]).
+_Hadoop_ klaster korišćen u ovom delu nema implementirane napredne bezbedonosne mehanizme. Standardno definisane kontrole pristupa _Hadoop_ klasteru podrazumevaju da korisnik ili dobija potpun pristup klasteru ili ga nema uopšte [[5]](#[5]). Na taj način, kontrola pristupa je svedena na nivo čvora koji učestvuje u klasteru. Ovakav pristup je čest u praksi jer se klasteri podižu u "bezbednim okruženjima" [[6]](#[6]).
 
 # Stablo napada
 
@@ -20,7 +20,7 @@ U nastavku je dat kratak opis pretnji niskog nivoa, konkretnih napada i mitigaci
 
 P211: Neovlašćeno čitanje blokova (eksfiltracija blokova)
 - P2111: Direktan pristup host _FS_ (ili _container mount_)
-    - Napadač sa _shell_ / FS pristupom kopira blokove podataka if _/dfs/data/current_.
+    - Napadač sa _shell_ / FS pristupom kopira blokove podataka iz _/dfs/data/current_.
     - Mitigacije:
         - M2111a: Ograničiti _SSH_ / doker pristup (_least privilage_)
         - M2111b: Ukloni nepotrebne _bind-mount_-ove 
@@ -60,13 +60,13 @@ P212: Sabotaža / gubitak podataka (brisanje ili _truncate_)
         - M2123g: Pravilno odvojeni diskovi za operativno sistem i _HDFS data_
 
 P213: Korupcija blokova (_checksum mismatch / bitflip_)
-    - P2131: Namerno modifikovanje _block_ fajlova (_owerwrite / truncate_)
-        - Pomoću _write_ pristupa menjamo sadržaj _block_ fajlova (_checksum mismatch_).
-        - Mitigacije:
-            - M2131a: FIM
-            - M2131b: _Read-only snapshot_-ovi
-            - M2131v: _Harden host access_
-            - M2131g: Dovoljno replikacija (3+) da se može obnoviti iz zdravih replika
+- P2131: Namerno modifikovanje _block_ fajlova (_overwrite / truncate_)
+    - Pomoću _write_ pristupa menjamo sadržaj _block_ fajlova (_checksum mismatch_).
+    - Mitigacije:
+        - M2131a: FIM
+        - M2131b: _Read-only snapshot_-ovi
+        - M2131v: _Harden host access_
+        - M2131g: Dovoljno replikacija (3+) da se može obnoviti iz zdravih replika
 - P2132: Enkapsulacija _block_ fajlova (ransomware)
     - Enkapsuliranje lokalnih _block_ fajlova čini podatke nečitljivim.
     - Mitigacije:
@@ -82,14 +82,14 @@ P213: Korupcija blokova (_checksum mismatch / bitflip_)
 
 P214: Lažno prijavljivanje (_spoofing_) / lažni _block reports_
 - P2141: _Spoof_-ovan _DataNode_ šalje lažne _block report_-ove.
-    - _Regue node_ tvrdi da poseduje _blok_-ove koje nema ili prijavljuje lažne _block_-ove.
+    - _Regue node_ tvrdi da poseduje _block_-ove koje nema ili prijavljuje lažne _block_-ove.
     - Mitigacije:
         - M2141a: Dodavanje autentifikacije _DataNode_ registracije (_cert-based / Kerberos_)
         - M2141b: _Network whitelist_ za _DataNode_-ove
 - P2142: _Replay_ starih _block report_-ova / _fsimage_-a
     - Vraćanje starih _report_-ova ili _fsimage_-a za izazivanje _inconsistency_.
     - Mitigacije:
-        - M2142a: _Integrity chesks_ za _fsimage_ (_hash / singing_)
+        - M2142a: _Integrity checks_ za _fsimage_ (_hash / singing_)
         - M2142b: _Secure storage_ za _checkpoint_-e
         - M2142v: _Access control_
 - P2143: Registracija lažnog _DataNode_-a (_unregistered / rogue node_)
@@ -148,7 +148,7 @@ Konkretan napad bi sadržao korak zlonamernog pristupa _Hadoop_ klasteru. Dajemo
 
 Odabran je scenario da je zlonamerni napadač istoristio neki maliciozni softver ili drugi način krađe kredencijala i pristupio računaru direktno.
 
-Zlonamerni napadač u oba navedena slučaja, kada uspešno izvrši pristup _Docker host_-u (odabranom računaru), meže da izvrši sledeću komandu. Na taj način zlonamerni napadač pristupa _Linux bash_-u _DataNode_-a na ko želi da prisluškuje komunikaciju. 
+Zlonamerni napadač u oba navedena slučaja, kada uspešno izvrši pristup _Docker host_-u (odabranom računaru), može da izvrši sledeću komandu. Na taj način zlonamerni napadač pristupa _Linux bash_-u _DataNode_-a na kojem želi da prisluškuje komunikaciju. 
 ``` sh
 docker exec -it datanode1 /bin/bash
 ```
@@ -190,7 +190,7 @@ docker cp datanode1:/tmp/hdfs_capture.pcap C:\\Users\\Public\\pomocni
 
 Sa lokacije _C:\\Users\\Public\\pomocni\\hdfs_capture.pcap_ zlonamerni korisnik može da preuzme _pcap_ zapis komunikacije sa _DataNode_-a. U našem scenariu predloženo rešenje bi bilo prebacivanje datoteke na _USB flash_ memoriju, _CD_ ili neko drugo alternativno rešenje. 
 
-Na svom lokalnom računaru, zlonamerni korisnik može da analizira nešifrovane blokove podataka _DataNode_-a koju je snimio. 
+Na svom lokalnom računaru, zlonamerni korisnik može da analizira nešifrovane blokove podataka _DataNode_-a koje je snimio. 
 
 Simulacija komunikacije koju smo koristili za realizaciju ovog napada jeste da smo pristupili _Linux bash_-u _NameNode_-a i izvršili sledeće komande:
 ``` sh
@@ -201,7 +201,7 @@ hdfs dfs -put test_snifovanje.txt /user/root/testni_primer.txt
 hdfs dfs -cat /user/root/testni_primer.txt
 ```
 
-Na taj način smo izvršili komunikaciju _NameNode_-a sa _DataNode_-om. Snimili smo komunikaciju gorenavedenom tehnikom i mogli smo da demonstriramo analizu _hdfs_capture.pcap_. Konkretno smo koristili _Wireshark_ [[10]]([10]) i na Slici 3 može da se vidi da je uspešno detektovan test iz našeg primera.
+Na taj način smo izvršili komunikaciju _NameNode_-a sa _DataNode_-om. Snimili smo komunikaciju gorenavedenom tehnikom i mogli smo da demonstriramo analizu _hdfs_capture.pcap_. Konkretno smo koristili _Wireshark_ [[10]]([10]) i na slici 3 može da se vidi da je uspešno detektovan test iz našeg primera.
 
 
 ![Detektovana poruka](./Dokaz.png)
@@ -210,11 +210,11 @@ _Slika 3: Primena Wireshark alata za detekciju nešifrovane komunikacije_
 
 ## Mitigacije za napad P2113 (Pasivno prisluškivanje transfera)
 
-U stablu napada je konkretno navedeno šta je moguće da uradimo kako bismo sprečili ovu vrstu napada, a sada ćemo obrazložiti i kako to uraditi.
+U stablu napada je konkretno navedeno šta je moguće da uradimo kako bismo sprečili ovu vrstu napada, a u nastavku ćemo obrazložiti način implementacije.
 
-- M2113a: Implementacija _TLS / SSL_ enkripcije [[11]](#11)
+- M2113a: Implementacija _TLS_ enkripcije [[11]](#11)
     - Upotreba _Transport layer security_ protokola je najdirektnija i najefikasnija tehnika za neutralizaciju _sniffing_ napada.
-    - Svi podaci koji se prenose između _Datnode_-a i korisnika / drugih _DataNode_-ova treba da budu šifrovane.
+    - Svi podaci koji se prenose između _DatNode_-a i korisnika / drugih _DataNode_-ova treba da budu šifrovane.
     - Čak i da zlonamerni napadač uspe da snimi saobraćaj (kao u gorenavedenoj demonstraciji), podaci iz blokova će biti nečitljivi.
     - Ukratko koraci koje je potrebno preduzeti:
         - Kreiranje digitalnih sertifikata za klaster.
@@ -223,7 +223,7 @@ U stablu napada je konkretno navedeno šta je moguće da uradimo kako bismo spre
 - M2113b: Segmentacija mreže [[12]](#12)
     - Segmentacija mreže je odbrambena tehnika za ograničavanje sposobnosti napadača da se kreće kroz mrežu ili prisluškuje saobraćaj.
     - Principi segmentacije:
-        - Izolacija _Data_ transfera: _HDFS data transfer_ (port 9866) i _RPC_ saobraćaj se izdvoje u zasebnu, privatnu mrežnu liniju nedostupnu javin servisima.
+        - Izolacija _Data_ transfera: _HDFS data transfer_ (port 9866) i _RPC_ saobraćaj se izdvoje u zasebnu, privatnu mrežnu liniju nedostupnu javnim servisima.
         - Zabrana kretanja (_lateral movement_): klijentske aplikacije koje ne zahtevaju direktan pristup _HDFS_-u ne treba da budu u istoj mrežnoj zoni kao _DataNode_-ovi.
     - Ukratko koraci koje je potrebno preduzeti:
         - Definisati zasebnu _Docker_ mrežu za _HDFS_ komunikaciju. 
@@ -269,4 +269,4 @@ Najbolji način za rešavanje pretnje prisluškivanja transfera jeste da se kori
 [11] [_SSL and TLS: Theory and Practice_](https://books.google.rs/books?hl=en&lr=&id=TOnNEAAAQBAJ&oi=fnd&pg=PP1&dq=tls&ots=8axxZSma1w&sig=uSyEEaxzEbFJnpR60bpcA__rEz8&redir_esc=y#v=onepage&q=tls&f=false) _(Autor: Oppliger R., Objavljeno: _30. jun 2023._)_
 
 <a id="[12]"></a>
-[12] [_A Formal Approach to Network Segmentation_](https://www.sciencedirect.com/science/article/abs/pii/S0167404820304351) _(Autori:Neerja Mhaskar, Mohammed Alabbad, Ridha Khedri, Objavljeno: _April 2021._)_
+[12] [_A Formal Approach to Network Segmentation_](https://www.sciencedirect.com/science/article/abs/pii/S0167404820304351) _(Autori: Neerja Mhaskar, Mohammed Alabbad, Ridha Khedri, Objavljeno: _April 2021._)_
